@@ -24,12 +24,12 @@ public class Client {
     private int[] ports = { 11111, 22222, 33333, 44444, 55555 };
 
     public Client(String ipAddr, int portNum) throws UnknownHostException {
-        clientNetworkInfo = new NetworkInfo("", ipAddr, portNum);
+        clientNetworkInfo = new NetworkInfo(portNum);
         new KeyboardThread(queue);
     }
 
     public Client(String ipAddr) throws UnknownHostException {
-        clientNetworkInfo = new NetworkInfo("", ipAddr, 11111);
+        clientNetworkInfo = new NetworkInfo(11111);
         new KeyboardThread(queue);
     }
 
@@ -106,7 +106,7 @@ public class Client {
     // System.out.print("\r" + text);
     // }
 
-    public void printAllClients(String input) {
+    public void printAllClients(String input) throws NumberFormatException, UnknownHostException {
         println("---All Clients Available---");
         String clients[] = input.split(";");
         for (String client : clients) {

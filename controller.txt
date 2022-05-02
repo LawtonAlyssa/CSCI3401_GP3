@@ -1,6 +1,0 @@
-Received from Client 0: client_info-A:192.168.200.78:0
-Received from Client 1: client_info-K:192.168.200.78:0
-Received from Client 2: client_info-W:192.168.200.78:0
-Received from Client 0: request-K;W
-Received from Client 1: request_resp-K accept A
-Received from Client 2: request_resp-W accept A

@@ -21,7 +21,7 @@ public class ChatClient {
      */
     public static void main(String[] args) throws Exception {
         
-        Client client = new Client("192.168.200.78", 0);
+        Client client = new Client("192.168.200.120", 0);
         int portNum = 12345;
         Connection serverCxn = new Connection(client, args, portNum);
 
