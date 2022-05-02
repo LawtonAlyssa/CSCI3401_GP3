@@ -167,9 +167,10 @@ class ClientThread extends Thread {
     }
 
     public int[] getClientNums(String input) {
-        String[] clientNames = input.split(" ");
+        String[] clientNames = input.split(";");
         int[] clientNums = new int[clientNames.length];
         for (int i = 0; i < clientNums.length; i++) {
+            System.out.println("Getting Client Num: " + clientNames[i]);
             clientNums[i] = server.getClientNetworkInfoFromName(clientNames[i]).getNum();
         }
         return clientNums;

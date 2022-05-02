@@ -180,6 +180,9 @@ public class Client {
                 String outLabel = "request_resp";
                 String outContent = clientNetworkInfo.getName() + (accept ? " accept " : " reject " ) + msg.getContent();
                 serverOut.println(outLabel + "-" + outContent);
+                if(accept){
+                    // start communication
+                }
                 break;
             case "request_resp":
                 String name = msg.getContent().split(" ")[0];
@@ -188,6 +191,8 @@ public class Client {
                     println(name + " rejected your request.");
                 else { // accept
                     println(name + " accepted your request.");
+                    // start communication
+                    
                 }
                 break;
             case "close":
