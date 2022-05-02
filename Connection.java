@@ -107,6 +107,8 @@ class ClientThread extends Thread {
     public boolean handleUserInput(String userInput) throws IOException, InterruptedException {
         Message msg = Message.parse(userInput);
         boolean exit = false;
+        String[] tokens;
+        int clientSender, clientReceiver;
         switch (msg.getLabel()) {
             case "client_info":
                 clientNetworkInfo = NetworkInfo.parse(msg.getContent());
@@ -126,10 +128,10 @@ class ClientThread extends Thread {
                 }
                 break;
             case "request_resp":
-                String[] tokens = msg.getContent().split(" ");
+                tokens = msg.getContent().split(" ");
                 // System.out.println("Len" + tokens.length);
-                int clientSender = clientNetworkInfo.getNum();
-                int clientReceiver = server.getClientNetworkInfoFromName(tokens[2]).getNum();
+                clientSender = clientNetworkInfo.getNum();
+                clientReceiver = server.getClientNetworkInfoFromName(tokens[2]).getNum();
                 // System.out.println("Sender" + clientSender);
                 queue.put(new ThreadMessage(msg.getLabel(), msg.getContent(), clientSender, clientReceiver));
                 break;
@@ -137,6 +139,14 @@ class ClientThread extends Thread {
                 break;
             case "close":
                 exit = true;
+                break;
+            case "msg":
+                tokens = msg.getContent().split("-", 3);
+                clientSender = server.getClientNetworkInfoFromName(tokens[0]).getNum();
+                for (String clientReceiverName : tokens[1].split("-")) {
+                    clientReceiver = server.getClientNetworkInfoFromName(clientReceiverName).getNum();
+                    queue.put(new ThreadMessage(msg.getLabel(), tokens[2], clientSender, clientReceiver));
+                }
                 break;
             default:
                 break;
@@ -159,7 +169,9 @@ class ClientThread extends Thread {
                 break;
             default:
                 outLabel = "msg";
-                outContent = thrdMsg.getContent();
+                String clientSender = server.getClientNetworkInfoFromNum(thrdMsg.getClientSender()).getName();
+                String clientReceiver = server.getClientNetworkInfoFromNum(thrdMsg.getClientReceiver()).getName();
+                outContent = Message.build(clientSender, clientReceiver, thrdMsg.getContent());
                 break;
         }
         out.println(outLabel + "-" + outContent);

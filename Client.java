@@ -6,6 +6,7 @@
 
 import java.io.*;
 import java.net.*;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -19,6 +20,7 @@ public class Client {
     private NetworkInfo clientNetworkInfo;
     private LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
     private boolean enableKeyboard = false;
+    private ArrayList<String> clientRecipients = new ArrayList<>();
     private int[] ports = { 11111, 22222, 33333, 44444, 55555 };
 
     public Client(String ipAddr, int portNum) throws UnknownHostException {
@@ -149,7 +151,7 @@ public class Client {
                     break;
                 default:
                     outLabel = "msg";
-                    outContent = userInput;
+                    outContent = getMessage(userInput);
                     break;
             }
         } catch (Exception e) {
@@ -159,6 +161,10 @@ public class Client {
         }
         serverOut.println(outLabel + "-" + outContent);
         return !exit;
+    }
+
+    public String getMessage(String msg) {
+        return Message.build(clientNetworkInfo.getName(), clientRecipients, msg);
     }
 
     public boolean handleServerInput(String serverInput) throws IOException, InterruptedException {
@@ -182,6 +188,7 @@ public class Client {
                 serverOut.println(outLabel + "-" + outContent);
                 if(accept){
                     // start communication
+                    clientRecipients.add(msg.getContent());
                 }
                 break;
             case "request_resp":
@@ -192,8 +199,12 @@ public class Client {
                 else { // accept
                     println(name + " accepted your request.");
                     // start communication
-                    
+                    clientRecipients.add(name);
                 }
+                break;
+            case "msg":
+                String[] tokens = msg.getContent().split("-", 3);
+                println(tokens[0] + ": " + tokens[2]);
                 break;
             case "close":
 

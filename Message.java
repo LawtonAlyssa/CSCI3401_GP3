@@ -1,3 +1,5 @@
+import java.util.*;
+
 public class Message {
     private String label = null;
     private String content = "";
@@ -34,6 +36,22 @@ public class Message {
             System.out.println("Unable to parse Message: " + input);
             return null;
         }
+    }
+
+    public static String build(String sender, ArrayList<String> recipients, String msg) {
+        StringBuilder out = new StringBuilder();
+        out.append(sender).append("-");
+        out.append(String.join(";", recipients)).append("-");
+        out.append(msg);
+        return out.toString();
+    }
+
+    public static String build(String sender, String recipient, String msg) {
+        StringBuilder out = new StringBuilder();
+        out.append(sender).append("-");
+        out.append(recipient).append("-");
+        out.append(msg);
+        return out.toString();
     }
     
 }
