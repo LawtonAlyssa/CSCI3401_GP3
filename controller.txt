@@ -1,0 +1,8 @@
+Received from Client 0: client_info-A:192.168.200.78:0
+Received from Client 1: client_info-K:192.168.200.78:0
+Received from Client 1: request-A
+Received from Client 0: request_resp-A reject K
+Received from Client 1: request-A
+Received from Client 0: request_resp-A accept K
+Received from Client 0: request-K
+Received from Client 1: request_resp-K reject A
