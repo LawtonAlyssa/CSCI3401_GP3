@@ -109,6 +109,7 @@ class ClientThread extends Thread {
         boolean exit = false;
         String[] tokens;
         int clientSender, clientReceiver;
+        String outLabel = msg.getLabel(), outContent = "";
         switch (msg.getLabel()) {
             case "client_info":
                 clientNetworkInfo = NetworkInfo.parse(msg.getContent());
@@ -124,20 +125,27 @@ class ClientThread extends Thread {
                 }
                 break;
             case "print_clients":
-                sendOut(msg.getLabel() + "-" + server.getAllClientsNetworkInfo());
+                outContent = server.getAllClientsNetworkInfo();
+                sendOut(outLabel, outContent);
                 break;
             case "request":
-                System.out.println("RECEIVED REQUEST IN SERVER - ORIGINAL THREAD");
+                System.out.println("RECEIVED REQUEST IN SERVER - CLIENT SENDER THREAD");
                 int[] clientReceiverNums = getClientNums(msg.getContent());
-                for (int clientReceiverNum : clientReceiverNums) {
-                    queue.put(new ThreadMessage(msg.getLabel(), "", clientNetworkInfo.getNum(), clientReceiverNum));
+                if (clientReceiverNums==null) {
+                    sendOut("error", "Client name not found...");
+                }
+                else {
+                    for (int clientReceiverNum : clientReceiverNums) {
+                        queue.put(new ThreadMessage(outLabel, outContent, clientNetworkInfo.getNum(), clientReceiverNum));
+                    }
                 }
                 break;
             case "request_resp":
                 tokens = msg.getContent().split(" ");
                 clientSender = clientNetworkInfo.getNum(); // respondee
                 clientReceiver = server.getClientsNetworkInfoFromName(tokens[2]).getNum(); // requester
-                queue.put(new ThreadMessage(msg.getLabel(), msg.getContent(), clientSender, clientReceiver));
+                outContent = msg.getContent();
+                queue.put(new ThreadMessage(outLabel, outContent, clientSender, clientReceiver));
                 break;
             case "leave":
                 tokens = msg.getContent().split("-", 3);
@@ -145,10 +153,24 @@ class ClientThread extends Thread {
                 clientSender = server.getClientsNetworkInfoFromName(tokens[0]).getNum(); //client leaving
                 for (String clientReceiverName : tokens[1].split("-")) {
                     clientReceiver = server.getClientsNetworkInfoFromName(clientReceiverName).getNum();
-                    queue.put(new ThreadMessage(msg.getLabel(), tokens[2], clientSender, clientReceiver));
+                    outContent = tokens[2];
+                    queue.put(new ThreadMessage(outLabel, outContent, clientSender, clientReceiver));
                 }
                 break;
+            case "leave_server":
+                server.removeClientSocket(server.getClientSocketFromNum(clientNetworkInfo.getNum()));
+                server.removeClientNetworkInfo(clientNetworkInfo);
+                break;
             case "close":
+                clientSender = clientNetworkInfo.getNum(); // client closing socket
+                for (NetworkInfo clientNetworkInfo :server.getClientsNetworkInfo()) {
+                    if (clientNetworkInfo.getNum()!=clientSender) {
+                        clientReceiver = clientNetworkInfo.getNum();
+                        queue.put(new ThreadMessage(msg.getLabel(), "", clientSender, clientReceiver));
+                        server.removeClientSocket(server.getClientSocketFromNum(clientNetworkInfo.getNum()));
+                        server.removeClientNetworkInfo(clientNetworkInfo);
+                    }  
+                }
                 exit = true;
                 break;
             case "msg":
@@ -176,7 +198,7 @@ class ClientThread extends Thread {
                 outContent = senderName; 
                 break;
             case "request":
-                System.out.println("RECEIVED REQUEST IN SERVER - OTHER THREAD");
+                System.out.println("RECEIVED REQUEST IN SERVER - CLIENT RECEIVER THREAD");
                 outContent = server.getClientsNetworkInfoFromNum(thrdMsg.getClientSender()).getName();
                 break;
             case "request_resp":
@@ -186,7 +208,7 @@ class ClientThread extends Thread {
                 outContent = server.getClientsNetworkInfoFromNum(thrdMsg.getClientSender()).getName();
                 break;
             case "close":
-                
+
                 // exit = true;
                 break;
             default:
@@ -196,7 +218,7 @@ class ClientThread extends Thread {
                 outContent = Message.build(clientSender, clientReceiver, thrdMsg.getContent());
                 break;
         }
-        sendOut(outLabel + "-" + outContent);
+        sendOut(outLabel, outContent);
         return !exit;
     }
 
@@ -204,8 +226,9 @@ class ClientThread extends Thread {
         String[] clientNames = input.split(";");
         int[] clientNums = new int[clientNames.length];
         for (int i = 0; i < clientNums.length; i++) {
-            System.out.println("Getting Client Num: " + clientNames[i]);
-            clientNums[i] = server.getClientsNetworkInfoFromName(clientNames[i]).getNum();
+            System.out.println("GETTING CLIENT NUM: " + clientNames[i]);
+            if (server.getClientsNetworkInfoFromName(clientNames[i])!=null) clientNums[i] = server.getClientsNetworkInfoFromName(clientNames[i]).getNum();
+            else return null;
         }
         return clientNums;
     }
@@ -239,7 +262,7 @@ class ClientThread extends Thread {
             }
             server.removeClientNetworkInfo(clientNetworkInfo);
             server.removeClientSocket(clientSocket);
-            clientSocket.close();
+            // clientSocket.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -259,9 +282,10 @@ class ClientThread extends Thread {
         System.out.println("Wrote to file.");
     }
 
-    public void sendOut(String outputLine) throws IOException {
-        out.println(outputLine);
-        writeToFile("Controller Sent: " + outputLine + "\n");
+    public void sendOut(String label, String content) throws IOException {
+        String line = label + "-" + content;
+        out.println(line);
+        writeToFile("Controller Sent: " + line + "\n");
     }
 }
 
