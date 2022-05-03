@@ -21,7 +21,7 @@ public class Client {
     private LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
     private boolean enableKeyboard = false;
     private ArrayList<String> clientRecipients = new ArrayList<>();
-    private int[] ports = { 11111, 22222, 33333, 44444, 55555 };
+    // private int[] ports = { 11111, 22222, 33333, 44444, 55555 };
 
     public Client(String ipAddr, int portNum) throws UnknownHostException {
         clientNetworkInfo = new NetworkInfo(portNum);
@@ -98,8 +98,11 @@ public class Client {
     }
 
     public void println(String text) {
+        String prompt = "> ";
+        if(text.length() < prompt.length())
+            text = String.format("%-5s", text);
         System.out.println("\r" + text);
-        System.out.print("input: ");
+        System.out.print(prompt);
     }
 
     // public void print(String text){
@@ -107,10 +110,22 @@ public class Client {
     // }
 
     public void printAllClients(String input) throws NumberFormatException, UnknownHostException {
-        println("---All Clients Available---");
         String clients[] = input.split(";");
+        if (clients.length == 1) {
+            println("There are currently no other available clients...");
+            return;
+        }
+        println("|-----------------------------------------------------|");
+        println(String.format("%-16s All Clients Available %16s", "|", "|"));
+        println("|-----------------------------------------------------|");
+        println(String.format("| %-16s| %-16s| %-16s|", "Name", "IP Address", "Port Number"));
+        println("|-----------------------------------------------------|");
         for (String client : clients) {
-            println(NetworkInfo.parse(client).displayString());
+            if(!clientNetworkInfo.getName().equals(NetworkInfo.parse(client).getName())){
+                println(NetworkInfo.parse(client).displayString());
+                println("|-----------------------------------------------------|");
+            }
+            //set checkbox text value
         }
     }
 
@@ -124,15 +139,16 @@ public class Client {
         return out.toString();
     }
 
-    public boolean handleUserInput(String userInput) {
+    public boolean handleUserInput(String userInput) throws InterruptedException {
         if (clientNetworkInfo.getName().equals("")) {
-
             serverOut.println("client_info-" + userInput + ":" + clientNetworkInfo.getIpAddr() + ":"
                     + clientNetworkInfo.getPortNum());
             clientNetworkInfo.setName(userInput);
+            serverOut.println("print_clients" + "-");
+            println("type 'help' to see commands\n");
             return true;
         }
-        // System.out.println("echo(client): " + userInput);
+        // System.out.println("ECHO(CLIENT): " + userInput);
         String[] tokens = userInput.split(" ");
         String inLabel = tokens[0].toLowerCase();
         String outLabel = inLabel, outContent = "";
@@ -140,55 +156,71 @@ public class Client {
         try {
             switch (inLabel) {
                 case "leave":
-                    serverOut.println(outLabel + "-" + outContent);
-                    println("Socket will be closed!");
-                    exit = true;
+                    outContent = getMessage("");
+                    clientRecipients = new ArrayList<>(); // clears client recipent list
+                    // println("RECIPIENTS:"+clientRecipients);
                     break;
                 case "print_clients":
                     break;
                 case "request":
                     outContent = joinTokens(tokens);
                     break;
+                case "close":
+                    serverOut.println(outLabel + "-" + outContent);
+                    println("Socket will be closed!");
+                    exit = true;
+                    break;
                 default:
                     outLabel = "msg";
                     outContent = getMessage(userInput);
+                    // println(outContent);
                     break;
             }
         } catch (Exception e) {
+            println(e.getMessage());
             serverOut.println("error-");
             println("Socket Closed!");
+            println("ERROR");
             return false;
         }
-        serverOut.println(outLabel + "-" + outContent);
+        if (outContent != null) serverOut.println(outLabel + "-" + outContent);
+        else println("Invalid command...");
         return !exit;
     }
 
     public String getMessage(String msg) {
-        return Message.build(clientNetworkInfo.getName(), clientRecipients, msg);
+        // println("RECIPIENTS:" + clientRecipients);
+        if (!clientRecipients.isEmpty()) return Message.build(clientNetworkInfo.getName(), clientRecipients, msg);
+        return null;
     }
 
     public boolean handleServerInput(String serverInput) throws IOException, InterruptedException {
         Message msg = Message.parse(serverInput);
-        println("echo: " + msg.getContent());
+        println("ECHO: " + msg.getContent());
         boolean exit = false;
         // String outLabel = "", outContent = "";
         switch (msg.getLabel()) {
+            case "client_info":
+                println(msg.getContent() + " has entered the server.");
+                break;
             case "print_clients":
                 printAllClients(msg.getContent());
                 break;
             case "leave":
-
+                println(msg.getContent() + " has left the chat.");
+                // println("RECIPIENT REMOVED:"+msg.getContent());
+                clientRecipients.remove(msg.getContent());
+                // println("RECIPIENTS:"+clientRecipients);
                 break;
             case "request":
                 enableKeyboard = true;
-                println("Would you like to talk with " + msg.getContent() + "? (Y/N): ");
+                println("Would you like to talk with " + msg.getContent() + "? (Y/N)");
                 boolean accept = getKeyboardInput().equalsIgnoreCase("Y");
                 String outLabel = "request_resp";
                 String outContent = clientNetworkInfo.getName() + (accept ? " accept " : " reject " ) + msg.getContent();
                 serverOut.println(outLabel + "-" + outContent);
                 if(accept){
-                    // start communication
-                    clientRecipients.add(msg.getContent());
+                    clientRecipients.add(msg.getContent()); // start communication
                 }
                 break;
             case "request_resp":
@@ -198,8 +230,7 @@ public class Client {
                     println(name + " rejected your request.");
                 else { // accept
                     println(name + " accepted your request.");
-                    // start communication
-                    clientRecipients.add(name);
+                    clientRecipients.add(name); // start communication
                 }
                 break;
             case "msg":
@@ -217,7 +248,7 @@ public class Client {
     }
 
     public void communicate() throws IOException, InterruptedException {
-        System.out.print("name: ");
+        System.out.print("name: "); // ***CHECK IF EMPTY & UNIQUE
 
         while (true) {
             if (queue.size() > 0 && !enableKeyboard) {
@@ -263,7 +294,7 @@ class KeyboardThread extends Thread {
         try {
             String userInput;
             do {
-                System.out.print("input: ");
+                System.out.print("> ");
 
                 userInput = stdIn.readLine();
                 if (userInput != null) {

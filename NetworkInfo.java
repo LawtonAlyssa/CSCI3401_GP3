@@ -55,7 +55,7 @@ public class NetworkInfo {
     }
 
     public String displayString() {
-        return "Name: " + name + "\tIP Address: " + ipAddr + "\tPort Number: " + portNum ;
+        return String.format("|%16s |%16s |%16s |", name, ipAddr, portNum);
     }
 
     @Override

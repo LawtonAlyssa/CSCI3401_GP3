@@ -1,0 +1,15 @@
+Received from Client 0: client_info-A:192.168.1.14:0
+Controller Sent: print_clients-A:192.168.1.14:0
+Received from Client 0: print_clients-
+Received from Client 1: client_info-J:192.168.1.14:0
+Controller Sent: client_info-J
+Controller Sent: print_clients-A:192.168.1.14:0;J:192.168.1.14:0
+Received from Client 1: print_clients-
+Received from Client 1: request-A
+Controller Sent: request-J
+Received from Client 0: request_resp-A accept J
+Controller Sent: request_resp-A accept J
+Received from Client 1: msg-J-A-test
+Controller Sent: msg-J-A-test
+Controller Sent: leave-A
+Received from Client 0: leave-A-J-

@@ -104,7 +104,7 @@ class ClientThread extends Thread {
         start();
     }
 
-    public boolean handleUserInput(String userInput) throws IOException, InterruptedException {
+    public boolean handleClientSenderInput(String userInput) throws IOException, InterruptedException {
         Message msg = Message.parse(userInput);
         boolean exit = false;
         String[] tokens;
@@ -116,9 +116,15 @@ class ClientThread extends Thread {
                 clientNetworkInfo.setNum(clientNum);
                 server.addClientNetworkInfo(clientNetworkInfo);
                 server.addClientSocket(clientSocket, clientNetworkInfo);
+                for (NetworkInfo clientRecipent : server.getClientsNetworkInfo()) {
+                    if(clientNum!=clientRecipent.getNum()) {
+                        // System.out.println("SENT: " + clientRecipent.getName());
+                        queue.put(new ThreadMessage(msg.getLabel(), clientNetworkInfo.getName(), clientNum, clientRecipent.getNum()));
+                    }
+                }
                 break;
             case "print_clients":
-                sendOut(msg.getLabel() + "-" + server.getClientNetworkInfo());
+                sendOut(msg.getLabel() + "-" + server.getAllClientsNetworkInfo());
                 break;
             case "request":
                 System.out.println("RECEIVED REQUEST IN SERVER - ORIGINAL THREAD");
@@ -129,52 +135,68 @@ class ClientThread extends Thread {
                 break;
             case "request_resp":
                 tokens = msg.getContent().split(" ");
-                // System.out.println("Len" + tokens.length);
-                clientSender = clientNetworkInfo.getNum();
-                clientReceiver = server.getClientNetworkInfoFromName(tokens[2]).getNum();
-                // System.out.println("Sender" + clientSender);
+                clientSender = clientNetworkInfo.getNum(); // respondee
+                clientReceiver = server.getClientsNetworkInfoFromName(tokens[2]).getNum(); // requester
                 queue.put(new ThreadMessage(msg.getLabel(), msg.getContent(), clientSender, clientReceiver));
                 break;
             case "leave":
+                tokens = msg.getContent().split("-", 3);
+                System.out.println(server.getClientsNetworkInfo());
+                clientSender = server.getClientsNetworkInfoFromName(tokens[0]).getNum(); //client leaving
+                for (String clientReceiverName : tokens[1].split("-")) {
+                    clientReceiver = server.getClientsNetworkInfoFromName(clientReceiverName).getNum();
+                    queue.put(new ThreadMessage(msg.getLabel(), tokens[2], clientSender, clientReceiver));
+                }
                 break;
             case "close":
                 exit = true;
                 break;
             case "msg":
                 tokens = msg.getContent().split("-", 3);
-                clientSender = server.getClientNetworkInfoFromName(tokens[0]).getNum();
+                clientSender = server.getClientsNetworkInfoFromName(tokens[0]).getNum();
                 for (String clientReceiverName : tokens[1].split("-")) {
-                    clientReceiver = server.getClientNetworkInfoFromName(clientReceiverName).getNum();
+                    clientReceiver = server.getClientsNetworkInfoFromName(clientReceiverName).getNum();
                     queue.put(new ThreadMessage(msg.getLabel(), tokens[2], clientSender, clientReceiver));
                 }
                 break;
             default:
+                System.out.println("label not found");
                 break;
         }
         receivedIn(userInput);
         return !exit;
     }
 
-
-    public boolean handleOtherUserInput(ThreadMessage thrdMsg) {
+    public boolean handleClientReceiverInput(ThreadMessage thrdMsg) throws IOException {
         boolean exit = false;
         String outLabel = thrdMsg.getLabel(), outContent = "";
         switch (thrdMsg.getLabel()) {
+            case "client_info":
+                String senderName = server.getClientsNetworkInfoFromNum(thrdMsg.getClientSender()).getName();
+                outContent = senderName; 
+                break;
             case "request":
                 System.out.println("RECEIVED REQUEST IN SERVER - OTHER THREAD");
-                outContent = server.getClientNetworkInfoFromNum(thrdMsg.getClientSender()).getName();
+                outContent = server.getClientsNetworkInfoFromNum(thrdMsg.getClientSender()).getName();
                 break;
             case "request_resp":
                 outContent = thrdMsg.getContent();
                 break;
+            case "leave":
+                outContent = server.getClientsNetworkInfoFromNum(thrdMsg.getClientSender()).getName();
+                break;
+            case "close":
+                
+                // exit = true;
+                break;
             default:
                 outLabel = "msg";
-                String clientSender = server.getClientNetworkInfoFromNum(thrdMsg.getClientSender()).getName();
-                String clientReceiver = server.getClientNetworkInfoFromNum(thrdMsg.getClientReceiver()).getName();
+                String clientSender = server.getClientsNetworkInfoFromNum(thrdMsg.getClientSender()).getName();
+                String clientReceiver = server.getClientsNetworkInfoFromNum(thrdMsg.getClientReceiver()).getName();
                 outContent = Message.build(clientSender, clientReceiver, thrdMsg.getContent());
                 break;
         }
-        out.println(outLabel + "-" + outContent);
+        sendOut(outLabel + "-" + outContent);
         return !exit;
     }
 
@@ -183,7 +205,7 @@ class ClientThread extends Thread {
         int[] clientNums = new int[clientNames.length];
         for (int i = 0; i < clientNums.length; i++) {
             System.out.println("Getting Client Num: " + clientNames[i]);
-            clientNums[i] = server.getClientNetworkInfoFromName(clientNames[i]).getNum();
+            clientNums[i] = server.getClientsNetworkInfoFromName(clientNames[i]).getNum();
         }
         return clientNums;
     }
@@ -203,14 +225,14 @@ class ClientThread extends Thread {
                 if(in.ready()){
                     String inputLine = in.readLine();
                     if (inputLine != null) {
-                        if (!handleUserInput(inputLine)) break;
+                        if (!handleClientSenderInput(inputLine)) break;
                     }
                 }
                 if(queue.size() > 0) {
                     ThreadMessage thrdMsg = queue.peek();
                     if (clientNetworkInfo != null && thrdMsg != null && thrdMsg.getClientReceiver()==clientNetworkInfo.getNum()) {
                         queue.take(); // removes from queue
-                        if (!handleOtherUserInput(thrdMsg)) break;
+                        if (!handleClientReceiverInput(thrdMsg)) break;
                         
                     }
                 }

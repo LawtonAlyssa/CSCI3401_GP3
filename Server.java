@@ -82,6 +82,14 @@ public class Server {
         this.out = out;
     }
 
+    public ArrayList<NetworkInfo> getClientsNetworkInfo() {
+        return clientsNetworkInfo;
+    }
+
+    public void setClientsNetworkInfo(ArrayList<NetworkInfo> clientsNetworkInfo) {
+        this.clientsNetworkInfo = clientsNetworkInfo;
+    }
+
     public BufferedReader getIn() {
         return in;
     }
@@ -119,7 +127,7 @@ public class Server {
         clientSockets.set(clientSockets.indexOf(clientSocket), null);
     }
     
-    public String getClientNetworkInfo() {
+    public String getAllClientsNetworkInfo() {
         StringBuilder clientInfo = new StringBuilder();
         for (int i = 0; i < clientsNetworkInfo.size(); i++) {
             clientInfo.append(clientsNetworkInfo.get(i).toString());
@@ -128,14 +136,15 @@ public class Server {
         return clientInfo.toString();
     }
     
-    public NetworkInfo getClientNetworkInfoFromName(String name) {
+    public NetworkInfo getClientsNetworkInfoFromName(String name) {
         for (NetworkInfo clientNetworkInfo : clientsNetworkInfo) {
-            if (clientNetworkInfo.getName().equals(name)) return clientNetworkInfo;
+            // System.out.println("MATCH:" + clientNetworkInfo.getName() + "--" + name);
+            if ((clientNetworkInfo.getName()).equals(name)) return clientNetworkInfo;
         }
         return null;
     }
 
-    public NetworkInfo getClientNetworkInfoFromNum(int num) {
+    public NetworkInfo getClientsNetworkInfoFromNum(int num) {
         for (NetworkInfo clientNetworkInfo : clientsNetworkInfo) {
             if (clientNetworkInfo.getNum()==num) return clientNetworkInfo;
         }
@@ -174,21 +183,6 @@ public class Server {
             }
             
         }
-        
-//        System.out.println(client.getIn());
-//        while ((inputLine = client.getIn().readLine()) != null) {
-//            System.out.println("Client " + (clients.indexOf(client)+1) + ": " + inputLine);
-//            //send to everyone else
-//
-//            if (inputLine.equalsIgnoreCase("Get Client Info")) {
-//                printAllClients();
-//            }
-////                if (inputLine.equalsIgnoreCase(inputLine))
-//            if (inputLine.equalsIgnoreCase("Bye")) {
-//                System.out.println("Client " + (clients.indexOf(client)+1) + " leaving chat");
-//                removeClient(client);
-//            }
-//        }
 
     }
 
