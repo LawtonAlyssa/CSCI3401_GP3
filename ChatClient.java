@@ -14,7 +14,7 @@ import java.net.*;
  */
 public class ChatClient {
 
-    final static int portNum = 22222;
+    // final static int portNum = 22222;
 
     /**
      * @param args the command line arguments
@@ -22,18 +22,15 @@ public class ChatClient {
      */
     public static void main(String[] args) throws Exception {
         
-        Client client = new Client("192.168.200.120", 0);
         int portNum = 12345;
-        Connection serverCxn = new Connection(client, args, portNum);
+        Client client = new Client("172.20.10.3", portNum); //192.168.200.120
 
-        /*
-         * Client otherClient = new Client(serverConnection.getClientInfo()[0],
-         * Integer.parseInt(serverConnection.getClientInfo()[1]));
-         * Server clientServer = new Server(client.getPortNum());
-         * Connection clientServerConn = new Connection(clientServer);
-         */
+        client.setServerIO(args);
+        client.communicate();
+        
+        // Connection serverCxn = new Connection(client, args, portNum);
 
-        serverCxn.close();
+        // serverCxn.close();
         client.close();
     }
 

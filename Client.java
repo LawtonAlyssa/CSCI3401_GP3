@@ -28,6 +28,7 @@ public class Client {
     public Client(String ipAddr, int portNum) throws UnknownHostException {
         clientNetworkInfo = new NetworkInfo(portNum);
         new KeyboardThread(queue);
+        
     }
 
     public Client(String ipAddr) throws UnknownHostException {
@@ -88,6 +89,28 @@ public class Client {
     // String name = getKeyboardInput();
 
     // }
+
+    public void setServerIO(String args[]) {
+        String serverHostName = clientNetworkInfo.getIpAddr();
+        if (args.length > 0) {
+            serverHostName = args[0];
+        }
+        System.out.println("Attemping to connect to host " + serverHostName + " on port " + 12345 + ".");
+        try {
+            // client.setServerSocket(new Socket("141.239.208.113", 3125)); 
+            serverSocket = new Socket(serverHostName, clientNetworkInfo.getPortNum());
+            // client.setOut(new PrintWriter(client.getServerSocket().getOutputStream(), true));
+            serverOut = new PrintWriter(serverSocket.getOutputStream(), true);
+            // client.setIn(new BufferedReader(new InputStreamReader(client.getServerSocket().getInputStream())));
+            serverIn = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
+        } catch (UnknownHostException e) {
+            System.err.println("Don't know about host: " + serverHostName);
+            System.exit(1);
+        } catch (IOException e) {
+            System.err.println("Couldn't get I/O for the connection to: " + serverHostName);
+            System.exit(1);
+        }
+    }
 
     public String getKeyboardInput() throws InterruptedException {
         String keyboardInput;
@@ -171,6 +194,12 @@ public class Client {
                         println("Cannot request during conversation.");
                         return true;
                     } 
+                    userInput = userInput.replace(" "+clientNetworkInfo.getName(), "");
+                    System.out.println("USER INPUT" + userInput);
+                    if (userInput.replace(" ", "").equals(outLabel)) {
+                        println("Cannot request to speak with yourself.");
+                        return true;
+                    }
                     outContent = joinTokens(tokens);
                     break;
                 case "close":
@@ -218,7 +247,7 @@ public class Client {
             case "success":
                 clientNetworkInfo.setName(msg.getContent().split(";")[0]);
                 int clientNum = Integer.parseInt(msg.getContent().split(";")[1]);
-                println("NUM:" + clientNum);
+                // println("NUM:" + clientNum);
                 file = new File(String.format("client_logs/client%d.log", clientNum));
                 clearFile();
                 sendOut("print_clients", "");
@@ -302,7 +331,7 @@ public class Client {
             }
             if (serverIn.ready()) {
                 String serverInput = serverIn.readLine();
-                println("SERVER INPUT:" + serverInput);
+                // println("SERVER INPUT:" + serverInput);
                 if (serverInput != null) {
                     if (!handleServerInput(serverInput)) break;
                 }
