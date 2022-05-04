@@ -4,12 +4,12 @@ public class NetworkInfo {
     private String name;
     private String ipAddr;
     private int portNum;
-    private int num;
+    
 
     public NetworkInfo(int portNum) throws UnknownHostException {
         name = "";
         ipAddr = InetAddress.getLocalHost().toString().split("/")[1];
-        this.portNum = portNum;
+        this.portNum = portNum;  
     }
 
     public NetworkInfo(String name, String ipAddr, int portNum) throws UnknownHostException {
@@ -42,17 +42,13 @@ public class NetworkInfo {
         this.portNum = portNum;
     }
 
-    public int getNum() {
-        return num;
-    }
-
-    public void setNum(int num) {
-        this.num = num;
-    }
-
     public static NetworkInfo parse(String info) throws NumberFormatException, UnknownHostException {
-        return new NetworkInfo(info.split(":")[0], info.split(":")[1], Integer.parseInt(info.split(":")[2]));
-    }
+        String[] tokens = info.split(":");
+        if (tokens.length!=3) {
+            System.out.println("INVALID NETWORK INFO:" + info);
+        }
+        return new NetworkInfo(tokens[0], tokens[1], Integer.parseInt(tokens[2]));
+    } 
 
     public String displayString() {
         return String.format("|%16s |%16s |%16s |", name, ipAddr, portNum);

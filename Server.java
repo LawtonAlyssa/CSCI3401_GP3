@@ -18,7 +18,7 @@ public class Server {
     private int portNum;
     private PrintWriter out;
     private BufferedReader in;
-    private ArrayList<NetworkInfo> clientsNetworkInfo;
+    private ArrayList<ServerNetworkInfo> serversNetworkInfo;
     private File file = new File("controller.txt");
     private ArrayList<Socket> clientSockets;
 
@@ -32,12 +32,15 @@ public class Server {
         this.portNum = portNum;
         out = null;
         in = null;
-        clientsNetworkInfo = new ArrayList<>();
+        serversNetworkInfo = new ArrayList<>();
         clientSockets = new ArrayList<>();
-        // PrintWriter pw = new PrintWriter(file.getName());
-        // pw.print("");
-        // other operations
-        // pw.close();
+        clearFile();
+    }
+
+    public void clearFile() throws FileNotFoundException {
+        PrintWriter pw = new PrintWriter(file.getName());
+        pw.print("");
+        pw.close();
     }
 
     public Server() {
@@ -45,7 +48,7 @@ public class Server {
         portNum = 12345;
         out = null;
         in = null;
-        clientsNetworkInfo = new ArrayList<>();
+        serversNetworkInfo = new ArrayList<>();
     }
 
     public int getPortNum() {
@@ -82,12 +85,12 @@ public class Server {
         this.out = out;
     }
 
-    public ArrayList<NetworkInfo> getClientsNetworkInfo() {
-        return clientsNetworkInfo;
+    public ArrayList<ServerNetworkInfo> getServerNetworkInfo() {
+        return serversNetworkInfo;
     }
 
-    public void setClientsNetworkInfo(ArrayList<NetworkInfo> clientsNetworkInfo) {
-        this.clientsNetworkInfo = clientsNetworkInfo;
+    public void setServerNetworkInfo(ArrayList<ServerNetworkInfo> serverNetworkInfo) {
+        this.serversNetworkInfo = serverNetworkInfo;
     }
 
     public BufferedReader getIn() {
@@ -102,90 +105,128 @@ public class Server {
         return serverSocket;
     }
 
-    public void addClientNetworkInfo(NetworkInfo networkInfo) {
-        clientsNetworkInfo.add(networkInfo);
+    public void addServerNetworkInfo(ServerNetworkInfo serverNetworkInfo) {
+        // for (int i = 0; i < serversNetworkInfo.size(); i++) {
+        //     if (serversNetworkInfo.get(i) == null) { // replace null
+        //         serversNetworkInfo.set(i, serverNetworkInfo);
+        //         return;
+        //     }
+        // }
+        serversNetworkInfo.add(serverNetworkInfo); // append if length=0 or no null elements
+        
     }
-    
+
     public void addClientSocket(Socket clientSocket, NetworkInfo clientNetworkInfo) {
-        if (clientNetworkInfo.getNum()<clientSockets.size()) clientSockets.set(clientNetworkInfo.getNum(), clientSocket);
-        else clientSockets.add(clientSocket);
+        // for (int i = 0; i < clientSockets.size(); i++) {
+        //     if (clientSockets.get(i) == null) { // replace null
+        //         clientSockets.set(i, clientSocket);
+        //         return;
+        //     }
+        // }
+        clientSockets.add(clientSocket); // append if length=0 or no null elements
+        // if (clientNetworkInfo.getNum()<clientSockets.size())
+        // clientSockets.set(clientNetworkInfo.getNum(), clientSocket);
+        // else clientSockets.add(clientSocket);
     }
 
-    public int pickClientSocketIndex(Socket clientSocket) {
-        for (int i = 0; i < clientSockets.size(); i++) {
-            if (clientSockets.get(i)==null) return i;
-        }
-        return clientSockets.size();
-    }
+    // public int pickClientSocketIndex(Socket clientSocket) {
+    //     for (int i = 0; i < clientSockets.size(); i++) {
+    //         if (clientSockets.get(i) == null)
+    //             return i;
+    //     }
+    //     return clientSockets.size();
+    // }
 
-    public void removeClientNetworkInfo(NetworkInfo networkInfo) {
-        System.out.println("CLIENT NTWK INFO BEFORE:" + clientsNetworkInfo);
-        clientsNetworkInfo.set(clientsNetworkInfo.indexOf(networkInfo), null);
-        System.out.println("CLIENT NTWK INFO AFTER:" + clientsNetworkInfo);
+    public void removeServerNetworkInfo(ServerNetworkInfo serverNetworkInfo) {
+        // System.out.println("CLIENT NTWK INFO BEFORE:" + clientsNetworkInfo);
+        // serversNetworkInfo.set(serversNetworkInfo.indexOf(serverNetworkInfo), null);
+        // System.out.println("CLIENT NTWK INFO AFTER:" + clientsNetworkInfo);
+        serversNetworkInfo.remove(serverNetworkInfo);
     }
 
     public void removeClientSocket(Socket clientSocket) throws IOException {
         clientSocket.close();
-        clientSockets.set(clientSockets.indexOf(clientSocket), null);
+        // clientSockets.set(clientSockets.indexOf(clientSocket), null);
+        clientSockets.remove(clientSocket);
     }
 
     public Socket getClientSocketFromNum(int num) {
-        for (int i = 0; i < clientsNetworkInfo.size(); i++) {
-            if (clientsNetworkInfo.get(i)==null) continue;
-            if (clientsNetworkInfo.get(i).getNum()==num) return clientSockets.get(i);
+        for (int i = 0; i < serversNetworkInfo.size(); i++) {
+            if (serversNetworkInfo.get(i) == null)
+                continue;
+            if (serversNetworkInfo.get(i).getNum() == num)
+                return clientSockets.get(i);
         }
         return null;
     }
 
-    private int getNotNullElements(ArrayList<NetworkInfo> arrList) {
+    private int getNotNullElements(ArrayList<ServerNetworkInfo> arrList) {
         int count = 0;
-        for (NetworkInfo element : arrList) {
-            if (element!=null) {
+        for (ServerNetworkInfo element : arrList) {
+            if (element != null) {
                 count++;
             }
         }
         return count;
     }
-    
+
+    public boolean isNameValid(String name) {
+        for (ServerNetworkInfo clientNetworkInfo : serversNetworkInfo) {
+            if (clientNetworkInfo != null) {
+                if (clientNetworkInfo.getName().equals(name)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     public String getAllClientsNetworkInfo() {
         StringBuilder clientInfo = new StringBuilder();
-        for (int i = 0; i < getNotNullElements(clientsNetworkInfo); i++) {
-            if (clientsNetworkInfo.get(i)!=null) {
-                clientInfo.append(clientsNetworkInfo.get(i).toString());
-                if (i < getNotNullElements(clientsNetworkInfo)-1) clientInfo.append(";");
+        int c = 0;
+        for (int i = 0; i < serversNetworkInfo.size(); i++) {
+            if (serversNetworkInfo.get(i) != null) {
+                clientInfo.append(serversNetworkInfo.get(i).toString());
+                if (c < getNotNullElements(serversNetworkInfo) - 1)
+                    clientInfo.append(";");
+                c++;
             }
-        } 
+        }
         return clientInfo.toString();
     }
-    
-    public NetworkInfo getClientsNetworkInfoFromName(String name) {
-        for (int i = 0; i < clientsNetworkInfo.size(); i++) {
-            if (clientsNetworkInfo.get(i).getName().equals(name)) return clientsNetworkInfo.get(i);
+
+    public ServerNetworkInfo getServerNetworkInfoFromName(String name) {
+        for (int i = 0; i < serversNetworkInfo.size(); i++) {
+            if (serversNetworkInfo.get(i).getName().equals(name))
+                return serversNetworkInfo.get(i);
         }
         // for (NetworkInfo clientNetworkInfo : clientsNetworkInfo) {
-            
-        //     // System.out.println("MATCH:" + clientNetworkInfo.getName() + "--" + name);
-        //     if ((clientNetworkInfo.getName()).equals(name)) return clientNetworkInfo;
+
+        // // System.out.println("MATCH:" + clientNetworkInfo.getName() + "--" + name);
+        // if ((clientNetworkInfo.getName()).equals(name)) return clientNetworkInfo;
         // }
         return null;
     }
 
-    public NetworkInfo getClientsNetworkInfoFromNum(int num) {
-        for (NetworkInfo clientNetworkInfo : clientsNetworkInfo) {
-            if (clientNetworkInfo.getNum()==num) return clientNetworkInfo;
+    public ServerNetworkInfo getServerNetworkInfoFromNum(int num) {
+        // System.out.println("CLIENT NTWK INFO:" + getClientsNetworkInfo());
+        for (ServerNetworkInfo clientNetworkInfo : serversNetworkInfo) {
+            // System.out.println("MATCH:" + clientNetworkInfo.getNum() + ":" + num);
+            if (clientNetworkInfo!=null && clientNetworkInfo.getNum() == num)
+                return clientNetworkInfo;
         }
         return null;
     }
 
     public void communicateAllClients() throws IOException {
-    /*
-        for (Client client : clients) {
-            out.println("Connected to Controller");
-            System.out.println(client);
-            communicate();
-        }
-    */
-        while(!clientSockets.isEmpty()){
+        /*
+         * for (Client client : clients) {
+         * out.println("Connected to Controller");
+         * System.out.println(client);
+         * communicate();
+         * }
+         */
+        while (!clientSockets.isEmpty()) {
             for (Socket clientSocket : clientSockets) {
                 communicate(clientSocket);
                 in.close();
@@ -193,20 +234,20 @@ public class Server {
                 // break;
             }
         }
-        
+
     }
 
-    public void communicate(Socket clientSocket) throws IOException { //Client client
+    public void communicate(Socket clientSocket) throws IOException { // Client client
         String inputLine;
         setOut(new PrintWriter(clientSocket.getOutputStream(), true));
         setIn(new BufferedReader(new InputStreamReader(clientSocket.getInputStream())));
-        while((inputLine = in.readLine()) != null) {
+        while ((inputLine = in.readLine()) != null) {
             System.out.println(inputLine);
-            if(inputLine.equalsIgnoreCase("Bye")) {
+            if (inputLine.equalsIgnoreCase("Bye")) {
                 removeClientSocket(clientSocket);
                 break;
             }
-            
+
         }
 
     }

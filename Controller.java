@@ -24,7 +24,7 @@ public class Controller {
         Server controller = new Server(portNum);
         System.out.println("Created Controller");
 
-        Connection cntrlrConn = new Connection(controller);
+        new Connection(controller);
 
         System.out.println("Client 1 connected!!!");
 

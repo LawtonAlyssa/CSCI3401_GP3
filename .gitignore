@@ -1,2 +1,6 @@
 
 *.class
+
+controller.txt
+
+client_logs/
