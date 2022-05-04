@@ -1,5 +1,8 @@
 import java.net.UnknownHostException;
-
+/**
+ * @author Alyssa
+ * @author Truong
+ */
 public class ServerNetworkInfo extends NetworkInfo{
     private static int counter = 0;
     private int num;

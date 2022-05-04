@@ -9,7 +9,8 @@ import java.net.*;
 
 /**
  *
- *
+ * @author Alyssa
+ * @author Truong
  */
 public class ChatClient {
 

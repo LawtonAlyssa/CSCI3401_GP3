@@ -1,5 +1,10 @@
 import java.net.*;
 
+/**
+ * 
+ * @author Alyssa
+ * @author Truong
+ */
 public class NetworkInfo {
     private String name;
     private String ipAddr;

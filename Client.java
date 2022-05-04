@@ -11,7 +11,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  *
- * @author aml05
+ * @author Alyssa
+ * @author Truong
  */
 public class Client {
     private Socket serverSocket = null;
@@ -218,7 +219,7 @@ public class Client {
                 clientNetworkInfo.setName(msg.getContent().split(";")[0]);
                 int clientNum = Integer.parseInt(msg.getContent().split(";")[1]);
                 println("NUM:" + clientNum);
-                file = new File(String.format("client_logs\\client%d.log", clientNum));
+                file = new File(String.format("client_logs/client%d.log", clientNum));
                 clearFile();
                 sendOut("print_clients", "");
                 println("type 'help' to see commands\n");

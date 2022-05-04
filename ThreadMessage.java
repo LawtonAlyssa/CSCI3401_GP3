@@ -1,5 +1,7 @@
 /**
- * ThreadMessage
+ * 
+ * @author Alyssa
+ * @author Truong
  */
 class ThreadMessage extends Message{
     private int clientSender;

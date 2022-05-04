@@ -6,11 +6,13 @@
 
 import java.io.*;
 import java.net.*;
+import java.nio.file.Files;
 import java.util.*;
 
 /**
  *
- * @author aml05
+ * @author Alyssa
+ * @author Truong
  */
 public class Server {
 
@@ -36,9 +38,16 @@ public class Server {
         clientSockets = new ArrayList<>();
         clearFile();
 
-        for(File file: new File("client_logs\\").listFiles()) 
-            if (!file.isDirectory()) 
-                file.delete();
+        File folder = new File("client_logs");
+
+        if (folder.exists()) {
+            for (File file : new File("client_logs/").listFiles())
+                if (!file.isDirectory())
+                    file.delete();
+        } else {
+            folder.mkdirs();
+        }
+
     }
 
     public void clearFile() throws FileNotFoundException {
@@ -111,21 +120,21 @@ public class Server {
 
     public void addServerNetworkInfo(ServerNetworkInfo serverNetworkInfo) {
         // for (int i = 0; i < serversNetworkInfo.size(); i++) {
-        //     if (serversNetworkInfo.get(i) == null) { // replace null
-        //         serversNetworkInfo.set(i, serverNetworkInfo);
-        //         return;
-        //     }
+        // if (serversNetworkInfo.get(i) == null) { // replace null
+        // serversNetworkInfo.set(i, serverNetworkInfo);
+        // return;
+        // }
         // }
         serversNetworkInfo.add(serverNetworkInfo); // append if length=0 or no null elements
-        
+
     }
 
     public void addClientSocket(Socket clientSocket, NetworkInfo clientNetworkInfo) {
         // for (int i = 0; i < clientSockets.size(); i++) {
-        //     if (clientSockets.get(i) == null) { // replace null
-        //         clientSockets.set(i, clientSocket);
-        //         return;
-        //     }
+        // if (clientSockets.get(i) == null) { // replace null
+        // clientSockets.set(i, clientSocket);
+        // return;
+        // }
         // }
         clientSockets.add(clientSocket); // append if length=0 or no null elements
         // if (clientNetworkInfo.getNum()<clientSockets.size())
@@ -134,11 +143,11 @@ public class Server {
     }
 
     // public int pickClientSocketIndex(Socket clientSocket) {
-    //     for (int i = 0; i < clientSockets.size(); i++) {
-    //         if (clientSockets.get(i) == null)
-    //             return i;
-    //     }
-    //     return clientSockets.size();
+    // for (int i = 0; i < clientSockets.size(); i++) {
+    // if (clientSockets.get(i) == null)
+    // return i;
+    // }
+    // return clientSockets.size();
     // }
 
     public void removeServerNetworkInfo(ServerNetworkInfo serverNetworkInfo) {
@@ -216,7 +225,7 @@ public class Server {
         // System.out.println("CLIENT NTWK INFO:" + getClientsNetworkInfo());
         for (ServerNetworkInfo clientNetworkInfo : serversNetworkInfo) {
             // System.out.println("MATCH:" + clientNetworkInfo.getNum() + ":" + num);
-            if (clientNetworkInfo!=null && clientNetworkInfo.getNum() == num)
+            if (clientNetworkInfo != null && clientNetworkInfo.getNum() == num)
                 return clientNetworkInfo;
         }
         return null;

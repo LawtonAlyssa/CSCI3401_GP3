@@ -8,7 +8,8 @@ import java.io.*;
 
 /**
  *
- * @author yizhu
+ * @author Alyssa 
+ * @author Truong
  */
 public class Controller {
 

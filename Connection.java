@@ -11,7 +11,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  *
- * @author aml05
+ * @author Alyssa
+ * @author Truong
  */
 public class Connection {
 
@@ -71,6 +72,7 @@ public class Connection {
     public void setServerIO() {
         System.out.println("Attemping to connect to host " + serverHostname + " on port " + 12345 + ".");
         try {
+            // client.setServerSocket(new Socket("141.239.208.113", 3125)); 
             client.setServerSocket(new Socket(serverHostname, 12345));
             client.setOut(new PrintWriter(client.getServerSocket().getOutputStream(), true));
             client.setIn(new BufferedReader(new InputStreamReader(client.getServerSocket().getInputStream())));

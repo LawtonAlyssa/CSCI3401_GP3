@@ -1,5 +1,9 @@
 import java.util.*;
-
+/**
+ * 
+ * @author Alyssa
+ * @author Truong
+ */
 public class Message {
     private String label = null;
     private String content = "";
