@@ -123,10 +123,13 @@ class ClientThread extends Thread {
                 clientNetworkInfo.setNum(clientNum);
                 server.addClientNetworkInfo(clientNetworkInfo);
                 server.addClientSocket(clientSocket, clientNetworkInfo);
+                System.out.println("GET CLIENT INFO:" + server.getClientsNetworkInfo() + server.getClientSockets());
                 for (NetworkInfo clientRecipent : server.getClientsNetworkInfo()) {
-                    if(clientNum!=clientRecipent.getNum()) {
-                        // System.out.println("SENT: " + clientRecipent.getName());
-                        queue.put(new ThreadMessage(msg.getLabel(), clientNetworkInfo.getName(), clientNum, clientRecipent.getNum()));
+                    if (clientRecipent!=null) {
+                        if(clientNum!=clientRecipent.getNum()) {
+                            // System.out.println("SENT: " + clientRecipent.getName());
+                            queue.put(new ThreadMessage(msg.getLabel(), clientNetworkInfo.getName(), clientNum, clientRecipent.getNum()));
+                        }
                     }
                 }
                 // System.out.println("INITIAL:" + clientSocket);
@@ -167,8 +170,15 @@ class ClientThread extends Thread {
                 }
                 break;
             case "leave_server":
-                server.removeClientSocket(server.getClientSocketFromNum(clientNetworkInfo.getNum()));
-                server.removeClientNetworkInfo(clientNetworkInfo);
+                clientSender = clientNetworkInfo.getNum(); // client leaving server
+                for (NetworkInfo clientReceiverNetworkInfo :server.getClientsNetworkInfo()) {
+                    if (clientReceiverNetworkInfo!=clientNetworkInfo) {
+                        clientReceiver = clientReceiverNetworkInfo.getNum();
+                        System.out.println("INSTRUCT TO REMOVE"+clientReceiver);
+                        queue.put(new ThreadMessage(msg.getLabel(), "", clientSender, clientReceiver));
+                    }  
+                }
+                
                 break;
             case "close":
                 receivedIn(userInput);
@@ -179,17 +189,8 @@ class ClientThread extends Thread {
                         clientReceiver = clientReceiverNetworkInfo.getNum();
                         System.out.println("INSTRUCT TO REMOVE"+clientReceiver);
                         queue.put(new ThreadMessage(msg.getLabel(), "", clientSender, clientReceiver));
-                        // System.out.println("BEFORE REMOVAL:" + server.getClientSockets() + 
-                        //     "\n:" + server.getClientsNetworkInfo());
-                        // server.removeClientSocket(server.getClientSocketFromNum(clientNetworkInfo.getNum()));
-                        // server.removeClientNetworkInfo(clientNetworkInfo);
-                        // System.out.println("AFTER REMOVAL:" + server.getClientSockets() + 
-                        //     "\n" + server.getClientsNetworkInfo());
                     }  
                 }
-                // close();
-                // System.out.println("SERVER SOCKETS:" + server.getClientSockets());
-                // System.out.println("CLIENT SENDER SOCKET:" + clientSocket);
                 exit = true;
                 break;
             case "msg":
@@ -285,13 +286,22 @@ class ClientThread extends Thread {
         }
     }
 
+    public void closeClient() throws IOException{
+        System.out.println("BEFORE LEAVE:" + server.getClientsNetworkInfo() + 
+                    "\n" + server.getClientSockets());
+        server.removeClientSocket(server.getClientSocketFromNum(clientNetworkInfo.getNum()));
+        server.removeClientNetworkInfo(clientNetworkInfo);
+        System.out.println("AFTER LEAVE:" + server.getClientsNetworkInfo() + 
+            "\n" + server.getClientSockets());
+    }
+
     public void close() throws IOException {
         out.close();
         in.close();
         // clientSocket.close();
         System.out.println("REMOVING CLIENT#" + clientNetworkInfo.getNum());
-        // server.removeClientNetworkInfo(clientNetworkInfo);
         server.removeClientSocket(clientSocket);
+        server.removeClientNetworkInfo(clientNetworkInfo);
         server.getServerSocket().close();
     }
 

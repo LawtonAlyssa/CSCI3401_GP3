@@ -136,13 +136,25 @@ public class Server {
         }
         return null;
     }
+
+    private int getNotNullElements(ArrayList<NetworkInfo> arrList) {
+        int count = 0;
+        for (NetworkInfo element : arrList) {
+            if (element!=null) {
+                count++;
+            }
+        }
+        return count;
+    }
     
     public String getAllClientsNetworkInfo() {
         StringBuilder clientInfo = new StringBuilder();
-        for (int i = 0; i < clientsNetworkInfo.size(); i++) {
-            clientInfo.append(clientsNetworkInfo.get(i).toString());
-            if (i < clientsNetworkInfo.size()-1) clientInfo.append(";");
-        }
+        for (int i = 0; i < getNotNullElements(clientsNetworkInfo); i++) {
+            if (clientsNetworkInfo.get(i)!=null) {
+                clientInfo.append(clientsNetworkInfo.get(i).toString());
+                if (i < getNotNullElements(clientsNetworkInfo)-1) clientInfo.append(";");
+            }
+        } 
         return clientInfo.toString();
     }
     

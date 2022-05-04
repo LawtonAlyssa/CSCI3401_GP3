@@ -164,7 +164,8 @@ public class Client {
                     // println("RECIPIENTS:"+clientRecipients);
                     break;
                 case "leave_server":
-
+                    println("Leaving server...");
+                    exit = true;
                     break;
                 case "print_clients":
                     break;
