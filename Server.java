@@ -35,6 +35,10 @@ public class Server {
         serversNetworkInfo = new ArrayList<>();
         clientSockets = new ArrayList<>();
         clearFile();
+
+        for(File file: new File("client_logs\\").listFiles()) 
+            if (!file.isDirectory()) 
+                file.delete();
     }
 
     public void clearFile() throws FileNotFoundException {
