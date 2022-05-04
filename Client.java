@@ -139,7 +139,7 @@ public class Client {
         return out.toString();
     }
 
-    public boolean handleUserInput(String userInput) throws InterruptedException {
+    public boolean handleClientInput(String userInput) throws InterruptedException {
         if (clientNetworkInfo.getName().equals("")) {
             serverOut.println("client_info-" + userInput + ":" + clientNetworkInfo.getIpAddr() + ":"
                     + clientNetworkInfo.getPortNum());
@@ -155,10 +155,16 @@ public class Client {
         boolean exit = false;
         try {
             switch (inLabel) {
+                case "help":
+                    println(getCommands());
+                    break;
                 case "leave":
                     outContent = getMessage("");
                     clientRecipients = new ArrayList<>(); // clears client recipent list
                     // println("RECIPIENTS:"+clientRecipients);
+                    break;
+                case "leave_server":
+
                     break;
                 case "print_clients":
                     break;
@@ -173,7 +179,6 @@ public class Client {
                 default:
                     outLabel = "msg";
                     outContent = getMessage(userInput);
-                    // println(outContent);
                     break;
             }
         } catch (Exception e) {
@@ -198,6 +203,7 @@ public class Client {
         Message msg = Message.parse(serverInput);
         println("ECHO: " + msg.getContent());
         boolean exit = false;
+        println("LABEL:" + msg.getLabel());
         // String outLabel = "", outContent = "";
         switch (msg.getLabel()) {
             case "client_info":
@@ -238,8 +244,11 @@ public class Client {
                 println(tokens[0] + ": " + tokens[2]);
                 break;
             case "close":
-
+                println("Sorry, socket will be closed!"); 
                 exit = true;
+                break;
+            case "error":
+                println(msg.getContent());
                 break;
             default:
                 break;
@@ -255,22 +264,37 @@ public class Client {
                 String userInput = queue.take();
                 if (userInput != null) {
                     // println("Getting input: " + userInput);
-                    if (!handleUserInput(userInput))
-                        break;
+                    if (!handleClientInput(userInput)) break;
                 }
             }
             if (serverIn.ready()) {
                 String serverInput = serverIn.readLine();
+                System.out.println(serverInput);
                 if (serverInput != null) {
-                    if (!handleServerInput(serverInput))
-                        break;
+                    if (!handleServerInput(serverInput)) break;
                 }
             }
             // Thread.sleep(100);
         }
-
+        System.out.println("GOT OUT!");
+        close();
+        System.exit(0); // Kills KeyboardThread
     }
 
+    public String getCommands() {
+        StringBuilder out = new StringBuilder();
+        out.append("---Commands---\n");
+        String[] commands = {"print_clients", 
+                                "request"};
+        String[] descriptions = {"server prints all available clients",
+                                    "request to speak to client(s)\n\t\t"+
+                                    "  type 'request name0 name1 ...'"};
+        for (int i = 0; i < descriptions.length; i++) {
+            out.append(String.format("%15s - %s\n", commands[i], descriptions[i]));
+        }
+        return out.toString();
+    }
+    
     public void close() throws IOException {
         serverIn.close();
         serverOut.close();
@@ -282,7 +306,7 @@ public class Client {
  * KeyboardThread
  */
 class KeyboardThread extends Thread {
-    private BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
+    private BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));; // new BufferedReader(new InputStreamReader(System.in));
     private LinkedBlockingQueue<String> queue;
 
     public KeyboardThread(LinkedBlockingQueue<String> queue) {
@@ -293,19 +317,22 @@ class KeyboardThread extends Thread {
     public void run() {
         try {
             String userInput;
+            
             do {
+                // System.out.println("KEYBOARD");
                 System.out.print("> ");
 
                 userInput = stdIn.readLine();
                 if (userInput != null) {
                     queue.put(userInput);
-                    // System.out.println("Keyboard thread: " + userInput);
+                    // System.out.println("KEYBOARD THREAD: " + userInput);
                 }
             } while (userInput != null);
             stdIn.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
+        // System.out.println("KEYBOARD CLOSE");
     }
 
 }

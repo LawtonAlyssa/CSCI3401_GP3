@@ -32,7 +32,7 @@ public class ChatClient {
          * Connection clientServerConn = new Connection(clientServer);
          */
 
-        // serverCxn.close();
+        serverCxn.close();
         client.close();
     }
 

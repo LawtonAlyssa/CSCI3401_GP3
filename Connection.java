@@ -82,7 +82,13 @@ public class Connection {
     }
 
     public void close() throws IOException {
-        clientSocket.close();
+        // client.close();
+        client.getServerIn().close();
+        // System.out.println("IN:" + client.getServerIn());
+        client.getServerOut().close();
+        // System.out.println("OUT:" + client.getServerOut());
+        client.getServerSocket().close();
+        // System.out.println("SOCKET:" + client.getServerSocket());
     }
 
 }
@@ -123,10 +129,13 @@ class ClientThread extends Thread {
                         queue.put(new ThreadMessage(msg.getLabel(), clientNetworkInfo.getName(), clientNum, clientRecipent.getNum()));
                     }
                 }
+                // System.out.println("INITIAL:" + clientSocket);
                 break;
             case "print_clients":
                 outContent = server.getAllClientsNetworkInfo();
                 sendOut(outLabel, outContent);
+                break;
+            case "help":
                 break;
             case "request":
                 System.out.println("RECEIVED REQUEST IN SERVER - CLIENT SENDER THREAD");
@@ -162,15 +171,25 @@ class ClientThread extends Thread {
                 server.removeClientNetworkInfo(clientNetworkInfo);
                 break;
             case "close":
+                receivedIn(userInput);
                 clientSender = clientNetworkInfo.getNum(); // client closing socket
-                for (NetworkInfo clientNetworkInfo :server.getClientsNetworkInfo()) {
-                    if (clientNetworkInfo.getNum()!=clientSender) {
-                        clientReceiver = clientNetworkInfo.getNum();
+                System.out.println("CLIENT NTWK INFO:" + server.getClientsNetworkInfo());
+                for (NetworkInfo clientReceiverNetworkInfo :server.getClientsNetworkInfo()) {
+                    if (clientReceiverNetworkInfo!=clientNetworkInfo) {
+                        clientReceiver = clientReceiverNetworkInfo.getNum();
+                        System.out.println("INSTRUCT TO REMOVE"+clientReceiver);
                         queue.put(new ThreadMessage(msg.getLabel(), "", clientSender, clientReceiver));
-                        server.removeClientSocket(server.getClientSocketFromNum(clientNetworkInfo.getNum()));
-                        server.removeClientNetworkInfo(clientNetworkInfo);
+                        // System.out.println("BEFORE REMOVAL:" + server.getClientSockets() + 
+                        //     "\n:" + server.getClientsNetworkInfo());
+                        // server.removeClientSocket(server.getClientSocketFromNum(clientNetworkInfo.getNum()));
+                        // server.removeClientNetworkInfo(clientNetworkInfo);
+                        // System.out.println("AFTER REMOVAL:" + server.getClientSockets() + 
+                        //     "\n" + server.getClientsNetworkInfo());
                     }  
                 }
+                // close();
+                // System.out.println("SERVER SOCKETS:" + server.getClientSockets());
+                // System.out.println("CLIENT SENDER SOCKET:" + clientSocket);
                 exit = true;
                 break;
             case "msg":
@@ -192,6 +211,7 @@ class ClientThread extends Thread {
     public boolean handleClientReceiverInput(ThreadMessage thrdMsg) throws IOException {
         boolean exit = false;
         String outLabel = thrdMsg.getLabel(), outContent = "";
+        System.out.println("LABEL:" + outLabel);
         switch (thrdMsg.getLabel()) {
             case "client_info":
                 String senderName = server.getClientsNetworkInfoFromNum(thrdMsg.getClientSender()).getName();
@@ -208,7 +228,7 @@ class ClientThread extends Thread {
                 outContent = server.getClientsNetworkInfoFromNum(thrdMsg.getClientSender()).getName();
                 break;
             case "close":
-
+                System.out.println("RECEIVED CLOSE IN SERVER - CLIENT RECEIVER THREAD");
                 // exit = true;
                 break;
             default:
@@ -256,16 +276,23 @@ class ClientThread extends Thread {
                     if (clientNetworkInfo != null && thrdMsg != null && thrdMsg.getClientReceiver()==clientNetworkInfo.getNum()) {
                         queue.take(); // removes from queue
                         if (!handleClientReceiverInput(thrdMsg)) break;
-                        
                     }
                 }
             }
-            server.removeClientNetworkInfo(clientNetworkInfo);
-            server.removeClientSocket(clientSocket);
-            // clientSocket.close();
+            close();
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public void close() throws IOException {
+        out.close();
+        in.close();
+        // clientSocket.close();
+        System.out.println("REMOVING CLIENT#" + clientNetworkInfo.getNum());
+        // server.removeClientNetworkInfo(clientNetworkInfo);
+        server.removeClientSocket(clientSocket);
+        server.getServerSocket().close();
     }
 
     public void receivedIn(String inputLine) throws IOException {
@@ -279,11 +306,12 @@ class ClientThread extends Thread {
         FileWriter fw = new FileWriter(server.getFile().getAbsoluteFile(), true);
         fw.write(line);
         fw.close();
-        System.out.println("Wrote to file.");
+        // System.out.println("Wrote to file.");
     }
 
     public void sendOut(String label, String content) throws IOException {
         String line = label + "-" + content;
+        // System.out.println("LINE:"+line);
         out.println(line);
         writeToFile("Controller Sent: " + line + "\n");
     }

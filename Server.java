@@ -34,10 +34,10 @@ public class Server {
         in = null;
         clientsNetworkInfo = new ArrayList<>();
         clientSockets = new ArrayList<>();
-        PrintWriter pw = new PrintWriter(file.getName());
-        pw.print("");
+        // PrintWriter pw = new PrintWriter(file.getName());
+        // pw.print("");
         // other operations
-        pw.close();
+        // pw.close();
     }
 
     public Server() {
@@ -119,12 +119,22 @@ public class Server {
     }
 
     public void removeClientNetworkInfo(NetworkInfo networkInfo) {
+        System.out.println("CLIENT NTWK INFO BEFORE:" + clientsNetworkInfo);
         clientsNetworkInfo.set(clientsNetworkInfo.indexOf(networkInfo), null);
+        System.out.println("CLIENT NTWK INFO AFTER:" + clientsNetworkInfo);
     }
 
     public void removeClientSocket(Socket clientSocket) throws IOException {
         clientSocket.close();
         clientSockets.set(clientSockets.indexOf(clientSocket), null);
+    }
+
+    public Socket getClientSocketFromNum(int num) {
+        for (int i = 0; i < clientsNetworkInfo.size(); i++) {
+            if (clientsNetworkInfo.get(i)==null) continue;
+            if (clientsNetworkInfo.get(i).getNum()==num) return clientSockets.get(i);
+        }
+        return null;
     }
     
     public String getAllClientsNetworkInfo() {
@@ -137,10 +147,14 @@ public class Server {
     }
     
     public NetworkInfo getClientsNetworkInfoFromName(String name) {
-        for (NetworkInfo clientNetworkInfo : clientsNetworkInfo) {
-            // System.out.println("MATCH:" + clientNetworkInfo.getName() + "--" + name);
-            if ((clientNetworkInfo.getName()).equals(name)) return clientNetworkInfo;
+        for (int i = 0; i < clientsNetworkInfo.size(); i++) {
+            if (clientsNetworkInfo.get(i).getName().equals(name)) return clientsNetworkInfo.get(i);
         }
+        // for (NetworkInfo clientNetworkInfo : clientsNetworkInfo) {
+            
+        //     // System.out.println("MATCH:" + clientNetworkInfo.getName() + "--" + name);
+        //     if ((clientNetworkInfo.getName()).equals(name)) return clientNetworkInfo;
+        // }
         return null;
     }
 
@@ -150,7 +164,6 @@ public class Server {
         }
         return null;
     }
-
 
     public void communicateAllClients() throws IOException {
     /*
@@ -190,6 +203,13 @@ public class Server {
         in.close();
         out.close();
         serverSocket.close();
+    }
 
+    public ArrayList<Socket> getClientSockets() {
+        return clientSockets;
+    }
+
+    public void setClientSockets(ArrayList<Socket> clientSockets) {
+        this.clientSockets = clientSockets;
     }
 }
