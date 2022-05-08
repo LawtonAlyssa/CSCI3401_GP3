@@ -26,7 +26,7 @@ public class Client {
     // private int[] ports = { 11111, 22222, 33333, 44444, 55555 };
 
     public Client(String ipAddr, int portNum) throws UnknownHostException {
-        clientNetworkInfo = new NetworkInfo(portNum);
+        clientNetworkInfo = new NetworkInfo("", ipAddr, portNum);
         new KeyboardThread(queue);
         
     }
