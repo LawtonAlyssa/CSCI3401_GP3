@@ -6,7 +6,6 @@
 
 import java.io.*;
 import java.net.*;
-import java.nio.file.Files;
 import java.util.*;
 
 /**
@@ -119,41 +118,15 @@ public class Server {
     }
 
     public void addServerNetworkInfo(ServerNetworkInfo serverNetworkInfo) {
-        // for (int i = 0; i < serversNetworkInfo.size(); i++) {
-        // if (serversNetworkInfo.get(i) == null) { // replace null
-        // serversNetworkInfo.set(i, serverNetworkInfo);
-        // return;
-        // }
-        // }
-        serversNetworkInfo.add(serverNetworkInfo); // append if length=0 or no null elements
+        serversNetworkInfo.add(serverNetworkInfo); 
 
     }
 
     public void addClientSocket(Socket clientSocket, NetworkInfo clientNetworkInfo) {
-        // for (int i = 0; i < clientSockets.size(); i++) {
-        // if (clientSockets.get(i) == null) { // replace null
-        // clientSockets.set(i, clientSocket);
-        // return;
-        // }
-        // }
-        clientSockets.add(clientSocket); // append if length=0 or no null elements
-        // if (clientNetworkInfo.getNum()<clientSockets.size())
-        // clientSockets.set(clientNetworkInfo.getNum(), clientSocket);
-        // else clientSockets.add(clientSocket);
+        clientSockets.add(clientSocket); 
     }
 
-    // public int pickClientSocketIndex(Socket clientSocket) {
-    // for (int i = 0; i < clientSockets.size(); i++) {
-    // if (clientSockets.get(i) == null)
-    // return i;
-    // }
-    // return clientSockets.size();
-    // }
-
     public void removeServerNetworkInfo(ServerNetworkInfo serverNetworkInfo) {
-        // System.out.println("CLIENT NTWK INFO BEFORE:" + clientsNetworkInfo);
-        // serversNetworkInfo.set(serversNetworkInfo.indexOf(serverNetworkInfo), null);
-        // System.out.println("CLIENT NTWK INFO AFTER:" + clientsNetworkInfo);
         serversNetworkInfo.remove(serverNetworkInfo);
     }
 
@@ -213,18 +186,11 @@ public class Server {
             if (serversNetworkInfo.get(i).getName().equals(name))
                 return serversNetworkInfo.get(i);
         }
-        // for (NetworkInfo clientNetworkInfo : clientsNetworkInfo) {
-
-        // // System.out.println("MATCH:" + clientNetworkInfo.getName() + "--" + name);
-        // if ((clientNetworkInfo.getName()).equals(name)) return clientNetworkInfo;
-        // }
         return null;
     }
 
     public ServerNetworkInfo getServerNetworkInfoFromNum(int num) {
-        // System.out.println("CLIENT NTWK INFO:" + getClientsNetworkInfo());
         for (ServerNetworkInfo clientNetworkInfo : serversNetworkInfo) {
-            // System.out.println("MATCH:" + clientNetworkInfo.getNum() + ":" + num);
             if (clientNetworkInfo != null && clientNetworkInfo.getNum() == num)
                 return clientNetworkInfo;
         }
@@ -232,13 +198,6 @@ public class Server {
     }
 
     public void communicateAllClients() throws IOException {
-        /*
-         * for (Client client : clients) {
-         * out.println("Connected to Controller");
-         * System.out.println(client);
-         * communicate();
-         * }
-         */
         while (!clientSockets.isEmpty()) {
             for (Socket clientSocket : clientSockets) {
                 communicate(clientSocket);

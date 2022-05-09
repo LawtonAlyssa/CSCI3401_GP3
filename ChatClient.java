@@ -11,16 +11,13 @@
  * @author Truong
  */
 public class ChatClient {
-
-    // final static int portNum = 22222;
-
     /**
      * @param args the command line arguments
      * @throws Exception
      */
     public static void main(String[] args) throws Exception {
         int portNum = 12345;
-        Client client = new Client("172.20.10.3", portNum); //192.168.200.120
+        Client client = new Client("192.168.1.9", portNum); //192.168.200.120
 
         client.setServerIO(args);
         client.communicate();

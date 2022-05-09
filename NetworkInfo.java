@@ -49,9 +49,6 @@ public class NetworkInfo {
 
     public static NetworkInfo parse(String info) throws NumberFormatException, UnknownHostException {
         String[] tokens = info.split(":");
-        if (tokens.length!=3) {
-            System.out.println("INVALID NETWORK INFO:" + info);
-        }
         return new NetworkInfo(tokens[0], tokens[1], Integer.parseInt(tokens[2]));
     } 
 

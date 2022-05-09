@@ -85,12 +85,6 @@ public class Client {
         this.clientNetworkInfo = clientNetworkInfo;
     }
 
-    // public void sendClientInfo() throws Exception {
-    // System.out.print("Enter name: ");
-    // String name = getKeyboardInput();
-
-    // }
-
     public void setServerIO(String args[]) {
         String serverHostName = clientNetworkInfo.getIpAddr();
         if (args.length > 0) {
@@ -98,11 +92,8 @@ public class Client {
         }
         System.out.println("Attemping to connect to host " + serverHostName + " on port " + 12345 + ".");
         try {
-            // client.setServerSocket(new Socket("141.239.208.113", 3125)); 
             serverSocket = new Socket(serverHostName, clientNetworkInfo.getPortNum());
-            // client.setOut(new PrintWriter(client.getServerSocket().getOutputStream(), true));
             serverOut = new PrintWriter(serverSocket.getOutputStream(), true);
-            // client.setIn(new BufferedReader(new InputStreamReader(client.getServerSocket().getInputStream())));
             serverIn = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
         } catch (UnknownHostException e) {
             System.err.println("Don't know about host: " + serverHostName);
@@ -130,10 +121,6 @@ public class Client {
         System.out.println("\r" + text);
         System.out.print(prompt);
     }
-
-    // public void print(String text){
-    // System.out.print("\r" + text);
-    // }
 
     public void printAllClients(String input) throws NumberFormatException, UnknownHostException {
         String clients[] = input.split(";");
@@ -198,7 +185,6 @@ public class Client {
                         return true;
                     } 
                     userInput = userInput.replace(" "+clientNetworkInfo.getName(), "");
-                    System.out.println("USER INPUT" + userInput);
                     if (userInput.replace(" ", "").equals(outLabel)) {
                         println("Cannot request to speak with yourself.");
                         return true;
@@ -221,8 +207,6 @@ public class Client {
         } catch (Exception e) {
             println(e.getMessage());
             sendOut("error","");
-            println("ERROR");
-            // println("Socket Closed!");
             return false;
         }
         if (outContent != null) sendOut(outLabel, outContent);
@@ -231,7 +215,6 @@ public class Client {
     }
 
     public String getMessage(String msg) {
-        // println("RECIPIENTS:" + clientRecipients);
         if (!clientRecipients.isEmpty()) return Message.build(clientNetworkInfo.getName(), clientRecipients, msg);
         return null;
     }
@@ -239,8 +222,6 @@ public class Client {
     public boolean handleServerInput(String serverInput) throws IOException, InterruptedException {
         if (file!=null) receivedIn(serverInput);
         Message msg = Message.parse(serverInput);
-        println("ECHO LABEL:" + msg.getLabel());
-        println("ECHO MESSAGE:" + msg.getContent());
         boolean exit = false;
         String outLabel = msg.getLabel(), outContent = "";
         String[] tokens;
@@ -254,7 +235,6 @@ public class Client {
             case "success":
                 clientNetworkInfo.setName(msg.getContent().split(";")[0]);
                 int clientNum = Integer.parseInt(msg.getContent().split(";")[1]);
-                // println("NUM:" + clientNum);
                 file = new File(String.format("client_logs/client%d.log", clientNum));
                 clearFile();
                 sendOut("print_clients", "");
@@ -288,7 +268,6 @@ public class Client {
                 }
                 break;
             case "request_resp":
-                println("RECEIVED");
                 String name = msg.getContent().split(" ")[0];
                 String resp = msg.getContent().split(" ")[1];
                 if (resp.equals("reject"))
@@ -336,18 +315,15 @@ public class Client {
             if (queue.size() > 0 && !enableKeyboard) {
                 String userInput = queue.take();
                 if (userInput != null) {
-                    // println("Getting input: " + userInput);
                     if (!handleClientInput(userInput)) break;
                 }
             }
             if (serverIn.ready()) {
                 String serverInput = serverIn.readLine();
-                // println("SERVER INPUT:" + serverInput);
                 if (serverInput != null) {
                     if (!handleServerInput(serverInput)) break;
                 }
             }
-            // Thread.sleep(100);
         }
         System.out.println("GOT OUT!");
         close();
@@ -357,11 +333,26 @@ public class Client {
     public String getCommands() {
         StringBuilder out = new StringBuilder();
         out.append("---Commands---\n");
-        String[] commands = {"print_clients", 
-                                "request"};
-        String[] descriptions = {"server prints all available clients",
-                                    "request to speak to client(s)\n\t\t"+
-                                    "  type 'request name0 name1 ...'"};
+        String[] commands = {
+            "help",
+            "print_clients", 
+            "request", 
+            "broadcast",
+            "leave",
+            "leave_server",
+            "close"
+        };
+        String[] descriptions = {
+            "shows all commands available",
+            "server prints all available clients",
+            "request private chat with another client\n\t\t" + 
+                "  syntax: 'request {client's name}'",
+            "broadcasts a message to all clients\n\t\t" + 
+                "  synatx: 'broadcast {message}'", 
+            "closes private chat",
+            "closes chat and disconnects from server",
+            "terminates server and closes chat for all clients"
+        };
         for (int i = 0; i < descriptions.length; i++) {
             out.append(String.format("%15s - %s\n", commands[i], descriptions[i]));
         }
@@ -378,7 +369,6 @@ public class Client {
         FileWriter fw = new FileWriter(new File(file.getPath()), true); //file.getAbsolutePath(), true);
         fw.write(new Timestamp(System.currentTimeMillis()) + "\n" + line);
         fw.close();
-        // System.out.println("Wrote to file.");
     }
 
     public void sendOut(String label, String content) throws IOException {
@@ -411,20 +401,17 @@ class KeyboardThread extends Thread {
             String userInput;
             
             do {
-                // System.out.println("KEYBOARD");
                 System.out.print("\r> ");
 
                 userInput = stdIn.readLine();
                 if (userInput != null) {
                     queue.put(userInput);
-                    // System.out.println("KEYBOARD THREAD: " + userInput);
                 }
             } while (userInput != null);
             stdIn.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
-        // System.out.println("KEYBOARD CLOSE");
     }
 
 }

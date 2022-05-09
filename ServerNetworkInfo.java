@@ -23,9 +23,6 @@ public class ServerNetworkInfo extends NetworkInfo{
 
     public static ServerNetworkInfo parse(String info) throws UnknownHostException {
         String[] tokens = info.split(":");
-        if (tokens.length!=3) {
-            System.out.println("INVALID SERVER NETWORK INFO:" + info);
-        }
         return new ServerNetworkInfo(tokens[0], tokens[1], Integer.parseInt(tokens[2]));
     }
 }
