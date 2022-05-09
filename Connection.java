@@ -21,15 +21,28 @@ public class Connection {
     private String serverHostname;
     private LinkedBlockingQueue<ThreadMessage> queue = new LinkedBlockingQueue<>();
 
+    /**
+     * Constructor set by passing a server
+     * @param server
+     * @throws UnknownHostException
+     * @throws IOException
+     */
     public Connection(Server server) throws UnknownHostException, IOException {
         this.server = server;
         setClientSocket();
     }
 
+    /**
+     * Get client socket
+     * @return client socket
+     */
     public Socket getClientSocket() {
         return clientSocket;
     }
 
+    /**
+     * Setting connection with client's socket
+     */
     public void setClientSocket() {
         while (true) {
 
@@ -47,6 +60,10 @@ public class Connection {
         }
     }
 
+    /**
+     * Get server hostname
+     * @return server hostname
+     */
     public String getServerHostname() {
         return serverHostname;
     }
@@ -60,6 +77,12 @@ class ClientThread extends Thread {
     private ServerNetworkInfo serverNetworkInfo;
     private LinkedBlockingQueue<ThreadMessage> queue;
 
+    /**
+     * Constructor
+     * @param clientSocket
+     * @param server
+     * @param queue
+     */
     public ClientThread(Socket clientSocket, Server server, LinkedBlockingQueue<ThreadMessage> queue) {
         this.clientSocket = clientSocket;
         this.server = server;
@@ -69,6 +92,13 @@ class ClientThread extends Thread {
         start();
     }
 
+    /**
+     * Handling client sender input 
+     * @param userInput input from client's keyboard
+     * @return true or false (exit)
+     * @throws IOException
+     * @throws InterruptedException
+     */
     public boolean handleClientSenderInput(String userInput) throws IOException, InterruptedException {
         Message msg = Message.parse(userInput);
         boolean exit = false;
@@ -176,6 +206,12 @@ class ClientThread extends Thread {
         return !exit;
     }
 
+    /**
+     * Hanlding client receiver input
+     * @param thrdMsg
+     * @return true (continue) or false (exit)
+     * @throws IOException
+     */
     public boolean handleClientReceiverInput(ThreadMessage thrdMsg) throws IOException {
         boolean exit = false;
         String outLabel = thrdMsg.getLabel(), outContent = "", clientSender, clientReceiver;
@@ -213,6 +249,11 @@ class ClientThread extends Thread {
         return !exit;
     }
 
+    /**
+     * Getting all clients's numbers by using their names
+     * @param input: clients's names
+     * @return
+     */
     public int[] getClientNums(String input) {
         String[] clientNames = input.split(";");
         int[] clientNums = new int[clientNames.length];
@@ -225,6 +266,9 @@ class ClientThread extends Thread {
         return clientNums;
     }
 
+    /**
+     * Setting IO and running
+     */
     public void run() {
         try {
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
@@ -260,11 +304,20 @@ class ClientThread extends Thread {
         }
     }
 
+    /**
+     * Close client by removing it and its info from server
+     * @throws IOException
+     */
     public void closeClient() throws IOException {
         server.removeClientSocket(server.getClientSocketFromNum(serverNetworkInfo.getNum()));
         server.removeServerNetworkInfo(serverNetworkInfo);
     }
 
+    /**
+     * Receive message from client and confirmation
+     * @param inputLine
+     * @throws IOException
+     */
     public void receivedIn(String inputLine) throws IOException {
         if (serverNetworkInfo != null) {
             writeToFile("Received from Client " + serverNetworkInfo.getNum() + ": " + inputLine + "\n");
@@ -272,18 +325,33 @@ class ClientThread extends Thread {
         }
     }
 
+    /**
+     * Writing to file
+     * @param line
+     * @throws IOException
+     */
     public void writeToFile(String line) throws IOException {
         FileWriter fw = new FileWriter(server.getFile().getAbsoluteFile(), true);
         fw.write(new Timestamp(System.currentTimeMillis()) + "\n" + line);
         fw.close();
     }
 
+    /**
+     * Sending out message from controller
+     * @param label
+     * @param content
+     * @throws IOException
+     */
     public void sendOut(String label, String content) throws IOException {
         String line = label + "-" + content;
         out.println(line);
         writeToFile("Controller Sent: " + line + "\n");
     }
 
+    /**
+     * Close IO chanels and server socket
+     * @throws IOException
+     */
     public void close() throws IOException {
         out.close();
         in.close();
