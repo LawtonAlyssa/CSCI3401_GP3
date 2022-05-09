@@ -23,13 +23,8 @@ public class Controller {
         
         int portNum = 12345;
         Server controller = new Server(portNum);
-        System.out.println("Created Controller");
 
         new Connection(controller);
-
-        System.out.println("Client 1 connected!!!");
-
-        System.out.println("All Connected!!!");
 
         controller.communicateAllClients();
 

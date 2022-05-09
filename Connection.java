@@ -6,6 +6,7 @@
 
 import java.io.*;
 import java.net.*;
+import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -350,7 +351,7 @@ class ClientThread extends Thread {
 
     public void writeToFile(String line) throws IOException {
         FileWriter fw = new FileWriter(server.getFile().getAbsoluteFile(), true);
-        fw.write(line);
+        fw.write(new Timestamp(System.currentTimeMillis()) + "\n" + line);
         fw.close();
         // System.out.println("Wrote to file.");
     }

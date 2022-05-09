@@ -6,6 +6,7 @@
 
 import java.io.*;
 import java.net.*;
+import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -365,16 +366,15 @@ public class Client {
 
     public void writeToFile(String line) throws IOException {
         FileWriter fw = new FileWriter(new File(file.getPath()), true); //file.getAbsolutePath(), true);
-        fw.write(line);
+        fw.write(new Timestamp(System.currentTimeMillis()) + "\n" + line);
         fw.close();
         // System.out.println("Wrote to file.");
     }
 
     public void sendOut(String label, String content) throws IOException {
         String line = label + "-" + content;
-        // System.out.println("LINE:"+line);
         serverOut.println(line);
-        writeToFile("Client Sent: " + line + "\n");
+        writeToFile("\tClient Sent: " + line + "\n");
     }
     
     public void close() throws IOException {

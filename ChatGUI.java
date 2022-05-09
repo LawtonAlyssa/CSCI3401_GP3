@@ -270,12 +270,13 @@ public class ChatGUI extends javax.swing.JFrame {
     }// </editor-fold>                        
 
     private void jButton_sendActionPerformed(java.awt.event.ActionEvent evt) {                                             
-        try {
+        /*try {
             String input = jTextArea_input.getText();
-            client.getQueue().put(input);
+            // client.getQueue().put(input);
         } catch (InterruptedException e) {
             jLabel_error.setText(e.getMessage());
         }
+        */
     }                                            
 
     private void jButton_leave_serverActionPerformed(java.awt.event.ActionEvent evt) {                                                     
@@ -316,7 +317,7 @@ public class ChatGUI extends javax.swing.JFrame {
             
             name = JOptionPane.showInputDialog(new JFrame(), "Enter your name");
             jOptionPane_name.setVisible(true);
-            client.getQueue().put(name);
+            // client.getQueue().put(name);
             
             client.communicate();
             
