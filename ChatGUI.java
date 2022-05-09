@@ -3,10 +3,16 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-import java.net.UnknownHostException;
+
+import java.awt.event.*;
+import java.io.*;
+import java.net.*;
+import java.sql.Timestamp;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.*;
+import javax.swing.Timer;
 
 /**
  *
@@ -17,29 +23,33 @@ public class ChatGUI extends javax.swing.JFrame {
     /**
      * Creates new form SimpleChattingRoom
      */
-    public ChatGUI() {
+    public ChatGUI() throws InterruptedException {
         initComponents();
-        
-        jOptionPane_name.setVisible(false);
-                
+             
         jTextArea_input.setEnabled(false);
+        jButton_broadcast.setEnabled(false);
         jTextArea_chat.setEnabled(false);
         jButton_send.setEnabled(false);
         
-        jList_all_clients.removeAll(); // clears list
+        jList_all_clients.setModel(new DefaultListModel()); // clears list
         jList_all_clients.setEnabled(false);
         jButton_chat.setEnabled(false);
         
-        jButton_leave_server.setEnabled(false);
+        jButton_leave_server.setEnabled(false);        
     }
     
-    private Client client;
-    
-    private Server server;
-    
-    private Connection serverCxn;
-    
+    private Socket serverSocket = null;
+    private PrintWriter serverOut = null;
+    private BufferedReader serverIn = null;
+    private NetworkInfo clientNetworkInfo;
+//    private LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
+    private boolean enableKeyboard = false;
+    private ArrayList<String> clientRecipients = new ArrayList<>();
+    private File file = null;
     private boolean inChat = false;
+    private boolean inServer = false;
+    
+//    private String[] clients;
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -56,6 +66,7 @@ public class ChatGUI extends javax.swing.JFrame {
         jScrollPane3 = new javax.swing.JScrollPane();
         jTextArea_input = new javax.swing.JTextArea();
         jButton_send = new javax.swing.JButton();
+        jButton_broadcast = new javax.swing.JButton();
         jPanel_chat1 = new javax.swing.JPanel();
         jScrollPane4 = new javax.swing.JScrollPane();
         jList_all_clients = new javax.swing.JList<>();
@@ -68,7 +79,7 @@ public class ChatGUI extends javax.swing.JFrame {
         jLabel_port_num = new javax.swing.JLabel();
         jTextField_port_num = new javax.swing.JTextField();
         jLabel_no_clients = new javax.swing.JLabel();
-        jOptionPane_name = new javax.swing.JOptionPane();
+        jLabel_chat_notification = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -90,6 +101,14 @@ public class ChatGUI extends javax.swing.JFrame {
             }
         });
 
+        jButton_broadcast.setBackground(new java.awt.Color(204, 204, 255));
+        jButton_broadcast.setText("broadcast");
+        jButton_broadcast.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton_broadcastActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel_chatLayout = new javax.swing.GroupLayout(jPanel_chat);
         jPanel_chat.setLayout(jPanel_chatLayout);
         jPanel_chatLayout.setHorizontalGroup(
@@ -101,7 +120,9 @@ public class ChatGUI extends javax.swing.JFrame {
                     .addGroup(jPanel_chatLayout.createSequentialGroup()
                         .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 297, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jButton_send)
+                        .addGroup(jPanel_chatLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(jButton_broadcast, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jButton_send, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
@@ -109,11 +130,14 @@ public class ChatGUI extends javax.swing.JFrame {
             jPanel_chatLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel_chatLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane1)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 483, Short.MAX_VALUE)
                 .addGap(18, 18, 18)
                 .addGroup(jPanel_chatLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 70, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jButton_send))
+                    .addGroup(jPanel_chatLayout.createSequentialGroup()
+                        .addComponent(jButton_send)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jButton_broadcast)))
                 .addContainerGap())
         );
 
@@ -193,7 +217,8 @@ public class ChatGUI extends javax.swing.JFrame {
         jLabel_no_clients.setForeground(new java.awt.Color(255, 51, 51));
         jLabel_no_clients.setText("No clients");
 
-        jOptionPane_name.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        jLabel_chat_notification.setForeground(new java.awt.Color(255, 51, 51));
+        jLabel_chat_notification.setText("Chat notification");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -201,94 +226,122 @@ public class ChatGUI extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel_chat, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
+                        .addComponent(jPanel_chat, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jPanel_chat1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addGroup(layout.createSequentialGroup()
-                                .addGap(35, 35, 35)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                    .addComponent(jLabel_error, javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                                            .addComponent(jLabel_port_num)
-                                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                            .addComponent(jTextField_port_num)
-                                            .addGap(18, 18, 18)
-                                            .addComponent(jButton_server))
-                                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                                            .addComponent(jLabel_ip)
-                                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                            .addComponent(jTextField_ip, javax.swing.GroupLayout.PREFERRED_SIZE, 242, javax.swing.GroupLayout.PREFERRED_SIZE))))))
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addComponent(jLabel_no_clients)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jButton_leave_server)
-                        .addGap(39, 39, 39))))
-            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addGroup(layout.createSequentialGroup()
-                    .addGap(0, 0, Short.MAX_VALUE)
-                    .addComponent(jOptionPane_name, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGap(0, 0, Short.MAX_VALUE)))
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jPanel_chat1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addGap(35, 35, 35)
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addComponent(jLabel_error)
+                                            .addGroup(layout.createSequentialGroup()
+                                                .addComponent(jLabel_ip)
+                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                                .addComponent(jTextField_ip, javax.swing.GroupLayout.PREFERRED_SIZE, 242, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                            .addGroup(layout.createSequentialGroup()
+                                                .addComponent(jLabel_port_num)
+                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                                .addComponent(jTextField_port_num)
+                                                .addGap(18, 18, 18)
+                                                .addComponent(jButton_server, javax.swing.GroupLayout.PREFERRED_SIZE, 81, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                .addGap(10, 10, 10)))))
+                                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                .addComponent(jLabel_no_clients)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(jButton_leave_server)
+                                .addGap(39, 39, 39))))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jLabel_chat_notification)
+                        .addGap(0, 0, Short.MAX_VALUE))))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+            .addGroup(layout.createSequentialGroup()
                 .addGap(32, 32, 32)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jButton_leave_server)
-                            .addComponent(jLabel_no_clients))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jPanel_chat1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jTextField_ip, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel_ip))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel_port_num)
-                            .addComponent(jTextField_port_num, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jButton_server))
-                        .addGap(7, 7, 7)
-                        .addComponent(jLabel_error)
-                        .addGap(147, 147, 147))
-                    .addComponent(jPanel_chat, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap())
-            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addGroup(layout.createSequentialGroup()
-                    .addGap(0, 0, Short.MAX_VALUE)
-                    .addComponent(jOptionPane_name, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGap(0, 0, Short.MAX_VALUE)))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jButton_leave_server)
+                    .addComponent(jLabel_no_clients))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jPanel_chat1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jTextField_ip, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel_ip))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel_port_num)
+                    .addComponent(jTextField_port_num, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jButton_server))
+                .addGap(7, 7, 7)
+                .addComponent(jLabel_error)
+                .addGap(160, 160, 160))
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jLabel_chat_notification)
+                .addGap(18, 18, 18)
+                .addComponent(jPanel_chat, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
         pack();
     }// </editor-fold>                        
 
     private void jButton_sendActionPerformed(java.awt.event.ActionEvent evt) {                                             
-        /*try {
+        try {
             String input = jTextArea_input.getText();
-            // client.getQueue().put(input);
-        } catch (InterruptedException e) {
+            sendOut("msg", getMessage(input));
+            jTextArea_chat.append("\n" + clientNetworkInfo.getName() + ": " + input);
+            jTextArea_input.setText("");
+        } catch (IOException e) {
             jLabel_error.setText(e.getMessage());
         }
-        */
     }                                            
 
     private void jButton_leave_serverActionPerformed(java.awt.event.ActionEvent evt) {                                                     
-        
+        try {
+            jLabel_chat_notification.setText("Leaving server...");
+            sendOut("leave_server","");
+            System.exit(0);
+        } catch (IOException ex) {
+            Logger.getLogger(ChatGUI.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
     }                                                    
 
     private void jButton_chatActionPerformed(java.awt.event.ActionEvent evt) {                                             
-//        try{
-//            
-//        } catch () {
-//            
-//        }
+        try {
+            if (inChat){
+                if (!clientRecipients.isEmpty()) {
+                    sendOut("leave", getMessage(""));
+                    jButton_send.setEnabled(false);
+                    jButton_chat.setText("request");
+                    clientRecipients = new ArrayList<>(); //clears Recipeints
+                }
+                else {
+                    jLabel_error.setText("Unexpected Error: Cannot leave chat without recipients.");
+                }
+            } else {
+                if (!clientRecipients.isEmpty()) {
+                    jLabel_error.setText("Cannot request during conversation.");
+                    return;
+                }
+
+                int selectedIndex = jList_all_clients.getSelectedIndex();
+                if (selectedIndex>=0){
+                    ListModel<String> model = jList_all_clients.getModel();
+                    String clientName = model.getElementAt(selectedIndex).split("\\|")[1].trim();
+                    sendOut("request", clientName);
+                } else {
+                    jLabel_error.setText("Error: Select client before requesting.");
+                }
+            }
+        } catch (IOException ex) {
+            jLabel_error.setText("Error: " + ex.getMessage());
+        }
     }                                            
 
     private void jTextField_ipActionPerformed(java.awt.event.ActionEvent evt) {                                              
@@ -300,45 +353,67 @@ public class ChatGUI extends javax.swing.JFrame {
     }                                                   
 
     private void jButton_serverActionPerformed(java.awt.event.ActionEvent evt) {                                               
-        String ipAddr = jTextField_ip.getText();
-        int portNum = 12345;
-        
-        try{
-            portNum = Integer.parseInt(jTextField_port_num.getText());
-        } catch (Exception e) {
-            jLabel_error.setText("Port Number must be an integer value.");
+        if (inServer) {
+            try {
+                jLabel_chat_notification.setText("Socket will be closed!");
+                sendOut("close", "");
+                System.exit(0);
+            } catch (IOException ex) {
+                Logger.getLogger(ChatGUI.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        } else {
+            String ipAddr = jTextField_ip.getText();
+            int portNum = 12345;
+
+            try{
+                portNum = Integer.parseInt(jTextField_port_num.getText());
+            } catch (Exception e) {
+                jLabel_error.setText("Port Number must be an integer value.");
+            }
+
+            String name;
+            try {
+                clientNetworkInfo = new NetworkInfo("", ipAddr, portNum);
+
+                setServerIO(new String[0]);
+                
+                inServer = true;
+                jButton_server.setText("terminate");
+                jLabel_error.setVisible(true);
+
+                jList_all_clients.setModel(new DefaultListModel()); // clears list
+                jList_all_clients.setEnabled(true);
+
+                jTextArea_input.setEnabled(true);
+                jButton_broadcast.setEnabled(true);
+
+                jButton_chat.setEnabled(true);
+
+                jButton_leave_server.setEnabled(true);
+
+                name = getClientName("Enter your name");
+                serverOut.println("client_info-" + getClientInfoStr(name));            
+                startTimer();
+
+            } catch (Exception e) {
+                jLabel_error.setText(e.getMessage());
+            }             
+
         }
         
-        String name;
-        try {
-            client = new Client(ipAddr, portNum);
-            client.setServerIO(new String[0]);
-            System.out.println("DONE");
-            
-            name = JOptionPane.showInputDialog(new JFrame(), "Enter your name");
-            jOptionPane_name.setVisible(true);
-            // client.getQueue().put(name);
-            
-            client.communicate();
-            
-//            serverCxn = new Connection(client, new String[0], portNum); 
-            
-        } catch (Exception e) {
-            jLabel_error.setText(e.getMessage());
-//            jLabel_error.setText("Unable to connect to Server. Check IP Address and/or Port Number.");
-        } 
-//        System.out.println("\rFINISHED");
-            jLabel_error.setVisible(false);
-            
-        
-            jList_all_clients.setEnabled(true);
-            jList_all_clients.removeAll(); // clears list
-            
-            jButton_chat.setEnabled(true);
-
-            jButton_leave_server.setEnabled(true);
-
     }                                              
+
+    private void jButton_broadcastActionPerformed(java.awt.event.ActionEvent evt) {                                                  
+        try {
+            String input = jTextArea_input.getText();
+            sendOut("broadcast", input);
+            jTextArea_chat.append("\n" + clientNetworkInfo.getName() + ": " + input);
+            jTextArea_input.setText("");
+        } catch (IOException ex) {
+            jLabel_error.setText("Error:" + ex.getMessage());
+        }
+        
+    }                                                 
 
     /**
      * @param args the command line arguments
@@ -349,113 +424,257 @@ public class ChatGUI extends javax.swing.JFrame {
         /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
          * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
          */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(ChatGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(ChatGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(ChatGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(ChatGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
+
         //</editor-fold>
         //</editor-fold>
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new ChatGUI().setVisible(true);
+                try {
+                    new ChatGUI().setVisible(true);
+                } catch (InterruptedException ex) {
+                    System.out.println(ex.getMessage());
+                }
             }
         });
         
     }
     
-    public String getClientName() {
-        return JOptionPane.showInputDialog(new JFrame(), "Enter your name");
+    public String getClientName(String msg) {
+        return JOptionPane.showInputDialog(msg);
     }
     
-    public JButton getjButton_chat() {
-        return jButton_chat;
-    }
-    public JButton getjButton_leave_server() {
-        return jButton_leave_server;
-    }
-    public JButton getjButton_send() {
-        return jButton_send;
+    public int getRequestResponse(String name) {
+        return JOptionPane.showConfirmDialog(null, "Would you like to talk with " + name + "?", "Request Response", JOptionPane.YES_NO_OPTION);
     }
     
-    public JButton getjButton_server() {
-        return jButton_server;
+    public String getClientInfoStr(String name) {
+        return name  + ":" + clientNetworkInfo.getIpAddr() + ":" + clientNetworkInfo.getPortNum();
     }
     
-    public JLabel getjLabel_error() {
-        return jLabel_error;
+    public void clearFile() throws FileNotFoundException {
+        PrintWriter pw = new PrintWriter(file.getPath());
+        pw.print("");
+        pw.close();
     }
     
-    public JLabel getjLabel_ip () {
-        return jLabel_ip;
-    }
-    public JLabel getjLabel_port_num() {
-        return jLabel_port_num;
-    }
-    
-    public JList<String> getjList_all_clients() {
-        return jList_all_clients;
+    public String getMessage(String msg) {
+        // println("RECIPIENTS:" + clientRecipients);
+        if (!clientRecipients.isEmpty()) return Message.build(clientNetworkInfo.getName(), clientRecipients, msg);
+        return null;
     }
     
-    public void setjList_all_clients(String[] list) {
-        jList_all_clients = new JList<>(list);
+    public String joinTokens(String[] tokens, char split_char) {
+        StringBuilder out = new StringBuilder();
+        for (int i = 1; i < tokens.length; i++) {
+            out.append(tokens[i]);
+            if (i != tokens.length - 1)
+                out.append(split_char);
+        }
+        return out.toString();
     }
     
-    public JPanel getjPanel_chat() {
-        return jPanel_chat;
+    public void printAllClients(String input) throws NumberFormatException, UnknownHostException {
+        jLabel_no_clients.setText("");
+        String[] clients = input.split(";");
+        if (clients.length == 1) {
+            jLabel_no_clients.setText("No available clients...");
+            return;
+        }
+        DefaultListModel clientList = new DefaultListModel();
+        for (String client : clients) {
+            String clientName = client.split(":")[0];
+            if (!clientName.equals(clientNetworkInfo.getName())) 
+                clientList.addElement(ServerNetworkInfo.parse(client).displayString());
+        }
+        
+        jList_all_clients.setModel(clientList);
     }
     
-    public JPanel getjPanel_chat1() {
-        return jPanel_chat1;
+    public boolean handleServerInput(String serverInput) throws IOException, InterruptedException {
+        if (file!=null) receivedIn(serverInput);
+        Message msg = Message.parse(serverInput);
+        boolean exit = false;
+        String outLabel = msg.getLabel(), outContent = "";
+        String[] tokens;
+        System.out.println("ECHO:" + serverInput);
+        switch (msg.getLabel()) {
+            case "client_info":
+                // allows client to reenter name
+                outContent = getClientInfoStr(getClientName("Name is unavailable. Please enter a new name"));
+                serverOut.println(outLabel + "-" + outContent);
+                break;
+            case "success":
+                clientNetworkInfo.setName(msg.getContent().split(";")[0]);
+                int clientNum = Integer.parseInt(msg.getContent().split(";")[1]);
+                file = new File(String.format("client_logs/client%d.log", clientNum));
+                clearFile();
+                sendOut("print_clients", "");
+                break;
+            case "join":
+                sendOut("print_clients", "");
+                jLabel_chat_notification.setText(msg.getContent() + " has entered the server.");
+                break;
+            case "print_clients":
+                printAllClients(msg.getContent());
+                break;
+            case "leave":
+                jLabel_chat_notification.setText(msg.getContent() + " has left the chat.");
+                clientRecipients.remove(msg.getContent());
+                jButton_send.setEnabled(false);
+                break;
+            case "leave_server":
+                jLabel_chat_notification.setText(msg.getContent() + " has left the server.");
+                if (!clientRecipients.isEmpty()) clientRecipients.remove(msg.getContent()); // ends chat if necessary
+                break;
+            case "request":
+                enableKeyboard = true;
+                boolean accept = getRequestResponse(msg.getContent())==0;
+                outLabel = "request_resp";
+                outContent = clientNetworkInfo.getName() + (accept ? " accept " : " reject " ) + msg.getContent();
+                sendOut(outLabel, outContent);
+                if(accept){
+                    clientRecipients.add(msg.getContent()); // start communication
+                    jButton_send.setEnabled(true);
+                    jButton_chat.setText("leave");
+                    inChat = accept;
+                }
+                break;
+            case "request_resp":
+                String name = msg.getContent().split(" ")[0];
+                String resp = msg.getContent().split(" ")[1];
+                if (resp.equals("reject"))
+                    jLabel_chat_notification.setText(name + " rejected your request.");
+                else { // accept
+                    jLabel_chat_notification.setText(name + " accepted your request.");
+                    clientRecipients.add(name); // start communication
+                    jButton_send.setEnabled(true);
+                    jButton_chat.setText("leave");
+                    inChat = true;
+                }
+                break;
+            case "msg":
+                tokens = msg.getContent().split("-", 3);
+                System.out.println("MESSAGE:" + tokens[0] + ": " + tokens[2]);
+                jTextArea_chat.append("\n" + tokens[0] + ": " + tokens[2]);
+                break;
+            case "broadcast":
+                tokens = msg.getContent().split("-", 3);
+                jTextArea_chat.append("\n" + tokens[0] + ": " + tokens[2]);
+                break;
+            case "close":
+                jLabel_chat_notification.setText("Sorry, socket will be closed!"); 
+                exit = true;
+                break;
+            case "error":
+                jLabel_error.setText("Error: " + msg.getContent());
+                System.out.println("SET ERROR1");
+                break;
+            default:
+                break;
+        }
+        return !exit;
     }
-    public JScrollPane getjScrollPane1() {
-        return jScrollPane1;
+
+    public void setServerIO(String args[]) {
+        String serverHostName = clientNetworkInfo.getIpAddr();
+        if (args.length > 0) {
+            serverHostName = args[0];
+        }
+        System.out.println("Attempting to connect to host " + serverHostName + " on port " + 12345 + ".");
+        try {
+            serverSocket = new Socket(serverHostName, clientNetworkInfo.getPortNum());
+            serverOut = new PrintWriter(serverSocket.getOutputStream(), true);
+            serverIn = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
+        } catch (UnknownHostException e) {
+            System.err.println("Don't know about host: " + serverHostName);
+            System.exit(1);
+        } catch (IOException e) {
+            System.err.println("Couldn't get I/O for the connection to: " + serverHostName);
+            System.exit(1);
+        }
     }
     
-    public JTextArea getjTextArea_chat() {
-        return jTextArea_chat;
+    public void startTimer() {
+        ActionListener taskPerformer = new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                try {
+                    communicate();
+                } catch (Exception ex) {
+                    for (StackTraceElement s:ex.getStackTrace()){
+                        System.out.println(s);
+                    }
+                    ((Timer)evt.getSource()).stop();
+                }
+            }
+        };
+        Timer timer = new Timer(100 ,taskPerformer);
+        timer.setRepeats(true);
+        timer.start();
+
+//        Thread.sleep(5000);
     }
-    public JTextArea getjTextArea_input() {
-        return jTextArea_input;
+        
+    public void communicate() throws IOException, InterruptedException {
+//        while (true) {
+        /*if (queue.size() > 0 && !enableKeyboard) {
+            String userInput = queue.take();
+            if (userInput != null) {
+                // println("Getting input: " + userInput);
+//                if (!handleClientInput(userInput)) close();
+            }
+        }*/
+        
+        if (serverIn.ready()) {
+            System.out.println("SERVER READY");
+            String serverInput = serverIn.readLine();
+             System.out.println("SERVER INPUT:" + serverInput);
+            if (serverInput != null) {
+                if (!handleServerInput(serverInput)) close();
+            }
+        }
+            // Thread.sleep(100);
+//        }        
     }
     
-    public JTextField getjTextField_ip() {
-        return jTextField_ip;
+    public void receivedIn(String inputLine) throws IOException {
+        if (clientNetworkInfo != null) {
+            writeToFile("Received from Server: " + inputLine + "\n");
+        }
+    }
+
+    public void writeToFile(String line) throws IOException {
+        FileWriter fw = new FileWriter(new File(file.getPath()), true); //file.getAbsolutePath(), true);
+        fw.write(new Timestamp(System.currentTimeMillis()) + "\n" + line);
+        fw.close();
+    }
+
+    public void sendOut(String label, String content) throws IOException {
+        String line = label + "-" + content;
+        serverOut.println(line);
+        writeToFile("\tClient Sent: " + line + "\n");
     }
     
-    public JTextField getjTextField_port_num() {
-        return jTextField_port_num;
+    public void close() throws IOException {
+        serverIn.close();
+        serverOut.close();
+        serverSocket.close();
+        System.exit(0);
     }
-    
-    public JLabel getjLabel_no_clients() {
-        return jLabel_no_clients;
-    }
-    
 
     // Variables declaration - do not modify                     
+    private javax.swing.JButton jButton_broadcast;
     private javax.swing.JButton jButton_chat;
     private javax.swing.JButton jButton_leave_server;
     private javax.swing.JButton jButton_send;
     private javax.swing.JButton jButton_server;
+    private javax.swing.JLabel jLabel_chat_notification;
     private javax.swing.JLabel jLabel_error;
     private javax.swing.JLabel jLabel_ip;
     private javax.swing.JLabel jLabel_no_clients;
     private javax.swing.JLabel jLabel_port_num;
     private javax.swing.JList<String> jList_all_clients;
-    private javax.swing.JOptionPane jOptionPane_name;
     private javax.swing.JPanel jPanel_chat;
     private javax.swing.JPanel jPanel_chat1;
     private javax.swing.JScrollPane jScrollPane1;
