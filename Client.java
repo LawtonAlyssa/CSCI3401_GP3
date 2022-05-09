@@ -26,65 +26,129 @@ public class Client {
     private File file = null;
     // private int[] ports = { 11111, 22222, 33333, 44444, 55555 };
 
+    /**
+     * Constructor for Client class with 2 params
+     * @param ipAddr client's IP address
+     * @param portNum client's port number
+     * @throws UnknownHostException
+     */
     public Client(String ipAddr, int portNum) throws UnknownHostException {
         clientNetworkInfo = new NetworkInfo("", ipAddr, portNum);
         new KeyboardThread(queue);
         
     }
 
+    /**
+     * Constructor for Client class with 1 param
+     * @param ipAddr client's IP address
+     * @throws UnknownHostException
+     */
     public Client(String ipAddr) throws UnknownHostException {
         clientNetworkInfo = new NetworkInfo(11111);
         new KeyboardThread(queue);
     }
 
+    /**
+     * Get Server Socket
+     * @return socket
+     */
     public Socket getServerSocket() {
         return serverSocket;
     }
 
+    /**
+     * Set Server Socket field
+     * @param serverSocket socket to be set to Server Socket
+     */
     public void setServerSocket(Socket serverSocket) {
         this.serverSocket = serverSocket;
     }
 
+    /**
+     * Get object to send message
+     * @return PrintWriter object
+     */
     public PrintWriter getOut() {
         return serverOut;
     }
 
+    /**
+     * Set object to send message
+     * @param serverOut
+     */
     public void setOut(PrintWriter serverOut) {
         this.serverOut = serverOut;
     }
 
+    /**
+     * Get object to read message
+     * @return BufferedReader object
+     */
     public BufferedReader getIn() {
         return serverIn;
     }
-
+    
+    /**
+     * Set object to read message
+     * @param in
+     */
     public void setIn(BufferedReader in) {
         this.serverIn = in;
     }
 
+    /**
+     * Get object to send message to server
+     * @return PrintWriter object
+     */
     public PrintWriter getServerOut() {
         return serverOut;
     }
 
+    /**
+     * Set object to send message to server
+     * @param serverOut
+     */
     public void setServerOut(PrintWriter serverOut) {
         this.serverOut = serverOut;
     }
 
+    /**
+     * Get object to read message from server
+     * @return BufferedReader object
+     */
     public BufferedReader getServerIn() {
         return serverIn;
     }
 
+    /**
+     * Set object to read message from server
+     * @param serverIn
+     */
     public void setServerIn(BufferedReader serverIn) {
         this.serverIn = serverIn;
     }
 
+    /**
+     * Get object holding network's information
+     * @return NetworkInfo object
+     */
     public NetworkInfo getClientNetworkInfo() {
         return clientNetworkInfo;
     }
 
+    /**
+     * Set object containing network's info
+     * @param clientNetworkInfo
+     */
     public void setClientNetworkInfo(NetworkInfo clientNetworkInfo) {
         this.clientNetworkInfo = clientNetworkInfo;
     }
 
+    /**
+     * Connect to host and
+     * Set input and output channels for server
+     * @param args
+     */
     public void setServerIO(String args[]) {
         String serverHostName = clientNetworkInfo.getIpAddr();
         if (args.length > 0) {
@@ -104,6 +168,11 @@ public class Client {
         }
     }
 
+    /**
+     * Get input from keyboard and put in a thread
+     * @return input from the keyboard
+     * @throws InterruptedException
+     */
     public String getKeyboardInput() throws InterruptedException {
         String keyboardInput;
         do {
@@ -114,6 +183,10 @@ public class Client {
         return keyboardInput;
     }
 
+    /**
+     * Printing out text on the screen with format
+     * @param text: text to be output
+     */
     public void println(String text) {
         String prompt = "\r> ";
         if(text.length() < prompt.length())
@@ -122,6 +195,12 @@ public class Client {
         System.out.print(prompt);
     }
 
+    /**
+     * Method to print out the formatted list of all available clients
+     * @param input String all current clients separated by ";"
+     * @throws NumberFormatException
+     * @throws UnknownHostException
+     */
     public void printAllClients(String input) throws NumberFormatException, UnknownHostException {
         String clients[] = input.split(";");
         if (clients.length == 1) {
@@ -141,8 +220,12 @@ public class Client {
         }
     }
 
-
-
+    /**
+     * Method to concatenate string tokens
+     * @param tokens: String to be combined
+     * @param split_char: desired splitting character
+     * @return a newly built String
+     */
     public String joinTokens(String[] tokens, char split_char) {
         StringBuilder out = new StringBuilder();
         for (int i = 1; i < tokens.length; i++) {
@@ -153,6 +236,13 @@ public class Client {
         return out.toString();
     }
 
+    /**
+     * Handling client's commands
+     * @param userInput
+     * @return boolean value (true: exit, invalid), otherwise: false
+     * @throws InterruptedException
+     * @throws IOException
+     */
     public boolean handleClientInput(String userInput) throws InterruptedException, IOException {
         if (clientNetworkInfo.getName().equals("")) {
             serverOut.println("client_info-" + getClientInfoStr(userInput));
@@ -214,11 +304,23 @@ public class Client {
         return !exit;
     }
 
+    /**
+     * Get message from client
+     * @param msg: client's message typed from keyboard
+     * @return message, otherwise: null if no other client in the room
+     */
     public String getMessage(String msg) {
         if (!clientRecipients.isEmpty()) return Message.build(clientNetworkInfo.getName(), clientRecipients, msg);
         return null;
     }
 
+    /**
+     * Server handling input from user
+     * @param serverInput
+     * @return boolean value (true: exit, invalid), otherwise: false
+     * @throws IOException
+     * @throws InterruptedException
+     */
     public boolean handleServerInput(String serverInput) throws IOException, InterruptedException {
         if (file!=null) receivedIn(serverInput);
         Message msg = Message.parse(serverInput);
@@ -298,16 +400,30 @@ public class Client {
         return !exit;
     }
 
+    /**
+     * Get client info 
+     * @param name: name of client
+     * @return client's info
+     */
     public String getClientInfoStr(String name) {
         return name  + ":" + clientNetworkInfo.getIpAddr() + ":" + clientNetworkInfo.getPortNum();
     }
 
+    /**
+     * Clear file
+     * @throws FileNotFoundException
+     */
     public void clearFile() throws FileNotFoundException {
         PrintWriter pw = new PrintWriter(file.getPath());
         pw.print("");
         pw.close();
     }
 
+    /**
+     * Handling communication between client and server
+     * @throws IOException
+     * @throws InterruptedException
+     */
     public void communicate() throws IOException, InterruptedException {
         System.out.print("name: "); // ***CHECK IF EMPTY & UNIQUE
 
@@ -330,6 +446,10 @@ public class Client {
         System.exit(0); // Kills KeyboardThread
     }
 
+    /**
+     * Get command entered by user
+     * @return client's command
+     */
     public String getCommands() {
         StringBuilder out = new StringBuilder();
         out.append("---Commands---\n");
@@ -359,24 +479,44 @@ public class Client {
         return out.toString();
     }
 
+    /**
+     * Writing input received to file
+     * @param inputLine: input to be saved in file
+     * @throws IOException
+     */
     public void receivedIn(String inputLine) throws IOException {
         if (clientNetworkInfo != null) {
             writeToFile("Received from Server: " + inputLine + "\n");
         }
     }
 
+    /**
+     * Method to write text to a file
+     * @param line
+     * @throws IOException
+     */
     public void writeToFile(String line) throws IOException {
         FileWriter fw = new FileWriter(new File(file.getPath()), true); //file.getAbsolutePath(), true);
         fw.write(new Timestamp(System.currentTimeMillis()) + "\n" + line);
         fw.close();
     }
 
+    /**
+     * Sending out message to server
+     * @param label
+     * @param content
+     * @throws IOException
+     */
     public void sendOut(String label, String content) throws IOException {
         String line = label + "-" + content;
         serverOut.println(line);
         writeToFile("\tClient Sent: " + line + "\n");
     }
     
+    /**
+     * Closing server IO chanels and socket
+     * @throws IOException
+     */
     public void close() throws IOException {
         serverIn.close();
         serverOut.close();
@@ -391,11 +531,18 @@ class KeyboardThread extends Thread {
     private BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));; // new BufferedReader(new InputStreamReader(System.in));
     private LinkedBlockingQueue<String> queue;
 
+    /**
+     * Constructor
+     * @param queue
+     */
     public KeyboardThread(LinkedBlockingQueue<String> queue) {
         this.queue = queue;
         start();
     }
 
+    /**
+     * Reading input from keyboard until empty
+     */
     public void run() {
         try {
             String userInput;
