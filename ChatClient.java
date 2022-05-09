@@ -12,7 +12,7 @@
  */
 public class ChatClient {
     /**
-     * @param args the command line arguments
+     * @param args the command line argument
      * @throws Exception
      */
     public static void main(String[] args) throws Exception {
