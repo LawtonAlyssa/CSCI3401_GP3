@@ -154,12 +154,14 @@ public class Client {
         }
     }
 
-    public String joinTokens(String[] tokens) {
+
+
+    public String joinTokens(String[] tokens, char split_char) {
         StringBuilder out = new StringBuilder();
         for (int i = 1; i < tokens.length; i++) {
             out.append(tokens[i]);
             if (i != tokens.length - 1)
-                out.append(";");
+                out.append(split_char);
         }
         return out.toString();
     }
@@ -201,7 +203,10 @@ public class Client {
                         println("Cannot request to speak with yourself.");
                         return true;
                     }
-                    outContent = joinTokens(tokens);
+                    outContent = joinTokens(tokens, ';');
+                    break;
+                case "broadcast":
+                    outContent = joinTokens(tokens, ' ');
                     break;
                 case "close":
                     sendOut(outLabel, outContent);
@@ -238,6 +243,7 @@ public class Client {
         println("ECHO MESSAGE:" + msg.getContent());
         boolean exit = false;
         String outLabel = msg.getLabel(), outContent = "";
+        String[] tokens;
         switch (msg.getLabel()) {
             case "client_info":
                 // allows client to reenter name
@@ -293,7 +299,11 @@ public class Client {
                 }
                 break;
             case "msg":
-                String[] tokens = msg.getContent().split("-", 3);
+                tokens = msg.getContent().split("-", 3);
+                println(tokens[0] + ": " + tokens[2]);
+                break;
+            case "broadcast":
+                tokens = msg.getContent().split("-", 3);
                 println(tokens[0] + ": " + tokens[2]);
                 break;
             case "close":

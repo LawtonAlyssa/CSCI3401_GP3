@@ -150,9 +150,8 @@ class ClientThread extends Thread {
                     if (clientRecipent != null) {
                         if (serverNetworkInfo.getNum() != clientRecipent.getNum()) {
                             // System.out.println("SENT: " + clientRecipent.getName());
-                            System.out.println(serverNetworkInfo.getName());
-                            queue.put(new ThreadMessage("join", serverNetworkInfo.getName(), serverNetworkInfo.getNum(),
-                                    clientRecipent.getNum()));
+                            // System.out.println(serverNetworkInfo.getName());
+                            queue.put(new ThreadMessage("join", serverNetworkInfo.getName(), serverNetworkInfo.getNum(), clientRecipent.getNum()));
                         }
                     }
                 }
@@ -174,6 +173,17 @@ class ClientThread extends Thread {
                         // System.out.println("SENT TO:");
                         queue.put(
                                 new ThreadMessage(outLabel, outContent, serverNetworkInfo.getNum(), clientReceiverNum));
+                    }
+                }
+                break;
+            case "broadcast":
+                clientSender = serverNetworkInfo.getNum(); // respondee
+                outContent = msg.getContent();
+                for (ServerNetworkInfo clientRecipent : server.getServerNetworkInfo()) {
+                    if (clientRecipent != null) {
+                        if (serverNetworkInfo.getNum() != clientRecipent.getNum()) {
+                            queue.put(new ThreadMessage(outLabel, outContent, clientSender, clientRecipent.getNum()));
+                        }
                     }
                 }
                 break;
@@ -241,7 +251,7 @@ class ClientThread extends Thread {
 
     public boolean handleClientReceiverInput(ThreadMessage thrdMsg) throws IOException {
         boolean exit = false;
-        String outLabel = thrdMsg.getLabel(), outContent = "";
+        String outLabel = thrdMsg.getLabel(), outContent = "", clientSender, clientReceiver;
         System.out.println("SEVER RECEIVER LABEL:" + outLabel);
         System.out.println("SERVER RECEIVER MSG:" + thrdMsg.getContent());
         switch (thrdMsg.getLabel()) {
@@ -268,9 +278,14 @@ class ClientThread extends Thread {
                 // System.out.println("RECEIVED CLOSE IN SERVER - CLIENT RECEIVER THREAD");
                 exit = true;
                 break;
+            case "broadcast":
+                clientSender = server.getServerNetworkInfoFromNum(thrdMsg.getClientSender()).getName();
+                clientReceiver = server.getServerNetworkInfoFromNum(thrdMsg.getClientReceiver()).getName();
+                outContent = Message.build(clientSender, clientReceiver, thrdMsg.getContent());
+                break;
             case "msg":
-                String clientSender = server.getServerNetworkInfoFromNum(thrdMsg.getClientSender()).getName();
-                String clientReceiver = server.getServerNetworkInfoFromNum(thrdMsg.getClientReceiver()).getName();
+                clientSender = server.getServerNetworkInfoFromNum(thrdMsg.getClientSender()).getName();
+                clientReceiver = server.getServerNetworkInfoFromNum(thrdMsg.getClientReceiver()).getName();
                 outContent = Message.build(clientSender, clientReceiver, thrdMsg.getContent());
                 break;
             default:

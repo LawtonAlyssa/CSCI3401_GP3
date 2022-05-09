@@ -4,9 +4,6 @@
  * and open the template in the editor.
  */
 
-import java.io.*;
-import java.net.*;
-import java.sql.Timestamp;
 
 /**
  *
@@ -23,7 +20,7 @@ public class ChatClient {
      */
     public static void main(String[] args) throws Exception {
         int portNum = 12345;
-        Client client = new Client("192.168.1.14", portNum); //192.168.200.120
+        Client client = new Client("172.20.10.3", portNum); //192.168.200.120
 
         client.setServerIO(args);
         client.communicate();
